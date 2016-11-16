@@ -35,3 +35,8 @@ Since we are working with very large binary objects that are constantly being co
  * Detail/Edge enhancement
  * Noise reduction
  * Brightness/Contrast/Hue/Saturation/Sharpness/Gamma adjustments
+
+## References
+ * http://on-demand.gputechconf.com/gtc/2012/presentations/S0328-Best-Practices-in-GPU-Based-Video-Processing.pdf
+ * https://devblogs.nvidia.com/parallelforall/unified-memory-in-cuda-6/
+ * http://on-demand.gputechconf.com/siggraph/2013/presentation/SG3108-GPU-Programming-Video-Image-Processing.pdf
