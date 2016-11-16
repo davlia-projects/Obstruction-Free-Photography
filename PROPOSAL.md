@@ -11,7 +11,7 @@ Below is an example video pipeline that is used for computer vision and robotics
 
 ![example](img/pipeline_example.png)
 
-## Challenges
+## Challenges and Investigations
 
 ### Task Independent Parallelism
 Using the example above, there are stages that are not necessarily dependent on eachother such as the grayscale conversion. We can then asynchronously schedule kernel launches to complete tasks in an order that maximizes throughput. This leads us to our next challenge.
@@ -24,6 +24,9 @@ Per kernel, we want to achieve data level parallelism for as many steps in the p
 
 ### Temporal Parallelism
 The question to be asked here is how much memory bandwith and computation time do we save if we are able to cache/precompute most of our data to complement the above levels of parallelism. In a task and thread parallel pipeline, it makes a lot of sense to leverage the format of how video is represented (as diffs).
+
+### Memory Management
+Since we are working with very large binary objects that are constantly being copied around, it might make sense to try leveraging Unified Memory to perform lazy copies. Additionally, we want to investigate the cost/benefits of Unified Virtual Addressing in a no-copy scenario (we believe it'll suck but the numbers will have to show).
 
 ## Goals/Features
  * Upsample/Downsampling
