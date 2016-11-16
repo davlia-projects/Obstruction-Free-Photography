@@ -7,7 +7,7 @@ Many livestreaming applications (Youtube, Facebook live, Twitch) have a need to 
 
 The tech stack we will be using for this project will primarily be C/C++ and CUDA. 
 
-Below is an example video pipeline that is used for computer vision and robotics. All video pipelines have an input node and an output node which take in and output the video stream. 
+Below is a video pipeline that is used for computer vision and robotics. It is used as a reference example. All video pipelines have an input node and an output node which take in and output the video stream. 
 
 ![example](img/pipeline_example.png)
 
