@@ -35,6 +35,7 @@ Since we are working with very large binary objects that are constantly being co
  * Detail/Edge enhancement
  * Noise reduction
  * Brightness/Contrast/Hue/Saturation/Sharpness/Gamma adjustments
+ * H.265 encoding/decoding
 
 ## References
  * http://on-demand.gputechconf.com/gtc/2012/presentations/S0328-Best-Practices-in-GPU-Based-Video-Processing.pdf
