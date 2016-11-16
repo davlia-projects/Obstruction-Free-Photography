@@ -26,7 +26,7 @@ Per kernel, we want to achieve data level parallelism for as many steps in the p
 The question to be asked here is how much memory bandwith and computation time do we save if we are able to cache/precompute most of our data to complement the above levels of parallelism. In a task and thread parallel pipeline, it makes a lot of sense to leverage the format of how video is represented (as diffs).
 
 ### Memory Management
-Since we are working with very large binary objects that are constantly being copied around, it might make sense to try leveraging Unified Memory to perform lazy copies. Additionally, we want to investigate the cost/benefits of Unified Virtual Addressing in a no-copy scenario (we believe it'll suck but the numbers will have to show).
+Since we are working with very large binary objects that are constantly being copied around, it might make sense to try leveraging Unified Memory to perform lazy copies to minimize latency. Additionally, we want to investigate the cost/benefits of Unified Virtual Addressing in a no-copy scenario (we believe it'll suck but the numbers will have to show).
 
 ## Goals/Features
  * Upsample/Downsampling
