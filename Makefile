@@ -4,4 +4,4 @@ NVXX=nvcc
 LIBS=-lavutil -lavformat -lavcodec -lavdevice -lswscale
 
 all:
-	$(CXX) main.cpp -o main $(CPPFLAGS) $(LIBS)
+	$(CXX) main.cpp naive.cpp -o main $(CPPFLAGS) $(LIBS)
