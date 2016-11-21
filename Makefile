@@ -4,5 +4,5 @@ NVXX=nvcc
 LIBS=-lavutil -lavformat -lavcodec -lavdevice -lswscale -lcudadevrt -lcudart -lcuda
 
 all:
-	$(NVXX) -c basic_blur.cu -o basic_blur.o
-	$(CXX) main.cpp basic_blur.o -o main $(CPPFLAGS) $(LIBS)
+	$(NVXX) -c async_blur.cu -o async_blur.o
+	$(CXX) main.cpp async_blur.o -o main $(CPPFLAGS) $(LIBS)

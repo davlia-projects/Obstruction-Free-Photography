@@ -126,32 +126,34 @@ int main(int argc, char * argv[]) {
 
         // TODO: rgb_frame->data[0] now correctly contains a RGB image
         blurFrame(t_buffer, rgb_frame->data[0], ctx->width, ctx->height);
-        memcpy(rgb_frame->data[0], t_buffer, numBytes * sizeof(uint8_t));
-        
-        // Encode
-        SwsContext * out_convert_ctx = sws_getCachedContext(
-            NULL, ctx->width, ctx->height, pixfmt,
-            ctx->width, ctx->height, out_ctx->pix_fmt, SWS_BICUBIC, NULL, NULL, NULL);
-        sws_scale(
-            out_convert_ctx, rgb_frame->data, rgb_frame->linesize, 0, ctx->height,
-            out_frame->data, out_frame->linesize);
-        out_frame->width = ctx->width;
-        out_frame->height = ctx->height;
-        out_frame->format = out_ctx->pix_fmt;
-        av_init_packet(&out_avpkt);
-        out_avpkt.data = NULL;
-        out_avpkt.size = 0;
-        int got_output = 0;
-        out_frame->pts = ctr;
-        int out_size = avcodec_encode_video2(out_ctx, &out_avpkt, out_frame, &got_output);
-        if (out_size < 0) {
-          fprintf(stderr, "Error encoding frame %d\n", ctr);
-          return 1;
-        }
-        if (got_output) {
-          fwrite(out_avpkt.data, 1, out_avpkt.size, f);
-          av_packet_unref(&out_avpkt);
-        }
+				if (ctr >= 2) {
+					memcpy(rgb_frame->data[0], t_buffer, numBytes * sizeof(uint8_t));
+					
+					// Encode
+					SwsContext * out_convert_ctx = sws_getCachedContext(
+							NULL, ctx->width, ctx->height, pixfmt,
+							ctx->width, ctx->height, out_ctx->pix_fmt, SWS_BICUBIC, NULL, NULL, NULL);
+					sws_scale(
+							out_convert_ctx, rgb_frame->data, rgb_frame->linesize, 0, ctx->height,
+							out_frame->data, out_frame->linesize);
+					out_frame->width = ctx->width;
+					out_frame->height = ctx->height;
+					out_frame->format = out_ctx->pix_fmt;
+					av_init_packet(&out_avpkt);
+					out_avpkt.data = NULL;
+					out_avpkt.size = 0;
+					int got_output = 0;
+					out_frame->pts = ctr;
+					int out_size = avcodec_encode_video2(out_ctx, &out_avpkt, out_frame, &got_output);
+					if (out_size < 0) {
+						fprintf(stderr, "Error encoding frame %d\n", ctr);
+						return 1;
+					}
+					if (got_output) {
+						fwrite(out_avpkt.data, 1, out_avpkt.size, f);
+						av_packet_unref(&out_avpkt);
+					}
+				}
 
         // Print stats
         ctr++;
