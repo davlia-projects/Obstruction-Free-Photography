@@ -2,6 +2,8 @@
 #include <stdint.h>
 #include "basic_blur.h"
 
+static uint8_t * dev_src, * dev_dst;
+
 __global__ void kernGaussianBlur(int width, int height, uint8_t * dst, uint8_t * src) {
 	int x = (blockIdx.x * blockDim.x) + threadIdx.x;
 	int y = (blockIdx.y * blockDim.y) + threadIdx.y;
@@ -34,14 +36,22 @@ __global__ void kernGaussianBlur(int width, int height, uint8_t * dst, uint8_t *
 	dst[idx + 2] = b;
 	return;
 }
-
-void blurFrame_basic(uint8_t * dst, uint8_t * src, int width, int height) {
-	uint8_t * dev_src, * dev_dst;
+void init(int width, int height) {
 	int sz = sizeof(uint8_t) * width * height * 3;
 	cudaMalloc(&dev_src, sz);
 	cudaMalloc(&dev_dst, sz);
+}
+
+void cleanup() {
+	cudaFree(dev_src);
+	dev_src = NULL;
+	cudaFree(dev_dst);
+	dev_dst = NULL;
+}
+
+void blurFrame(uint8_t * dst, uint8_t * src, int width, int height) {
+	int sz = sizeof(uint8_t) * width * height * 3;
 	cudaMemcpy(dev_src, src, sz, cudaMemcpyHostToDevice);
-	
 	const dim3 blockSize2d(8, 8);
 	const dim3 blocksPerGrid2d(
 		(width + blockSize2d.x - 1) / blockSize2d.x,

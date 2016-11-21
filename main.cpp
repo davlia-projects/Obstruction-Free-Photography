@@ -108,6 +108,8 @@ int main(int argc, char * argv[]) {
     return 1;
   }
 
+
+	init(ctx->width, ctx->height);
   int ctr = 0;
   auto startTime = chrono::high_resolution_clock::now();
   while (av_read_frame(fctx, &avpkt) >= 0) {
@@ -123,7 +125,7 @@ int main(int argc, char * argv[]) {
             rgb_frame->data, rgb_frame->linesize);
 
         // TODO: rgb_frame->data[0] now correctly contains a RGB image
-        blurFrame_basic(t_buffer, rgb_frame->data[0], ctx->width, ctx->height);
+        blurFrame(t_buffer, rgb_frame->data[0], ctx->width, ctx->height);
         memcpy(rgb_frame->data[0], t_buffer, numBytes * sizeof(uint8_t));
         
         // Encode
@@ -163,6 +165,8 @@ int main(int argc, char * argv[]) {
       }
     }
   }
+
+	cleanup();
 
   // Sequence end code
   uint8_t endcode[] = {0, 0, 1, 0xb7};
