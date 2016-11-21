@@ -7,7 +7,7 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
-#include "naive.h"
+#include "basic_blur.h"
 using namespace std;
 
 int decode(AVCodecContext *avctx, AVFrame *frame, int *got_frame, AVPacket *pkt) {
@@ -123,7 +123,7 @@ int main(int argc, char * argv[]) {
             rgb_frame->data, rgb_frame->linesize);
 
         // TODO: rgb_frame->data[0] now correctly contains a RGB image
-        blurFrame(t_buffer, rgb_frame->data[0], ctx->width, ctx->height);
+        blurFrame_basic(t_buffer, rgb_frame->data[0], ctx->width, ctx->height);
         memcpy(rgb_frame->data[0], t_buffer, numBytes * sizeof(uint8_t));
         
         // Encode
