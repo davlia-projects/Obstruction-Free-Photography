@@ -125,9 +125,9 @@ int main(int argc, char * argv[]) {
             rgb_frame->data, rgb_frame->linesize);
 
         // TODO: rgb_frame->data[0] now correctly contains a RGB image
-        blurFrame(t_buffer, rgb_frame->data[0], ctx->width, ctx->height);
+        // blurFrame(t_buffer, rgb_frame->data[0], ctx->width, ctx->height);
 				if (ctr >= 2) {
-					memcpy(rgb_frame->data[0], t_buffer, numBytes * sizeof(uint8_t));
+					// memcpy(rgb_frame->data[0], t_buffer, numBytes * sizeof(uint8_t));
 					
 					// Encode
 					SwsContext * out_convert_ctx = sws_getCachedContext(

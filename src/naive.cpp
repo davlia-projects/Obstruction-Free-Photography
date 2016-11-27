@@ -2,6 +2,9 @@
 #include <bits/stdc++.h>
 using namespace std;
 
+void init(int width, int height) {}
+void cleanup() {}
+
 void blurFrame(uint8_t * dst, uint8_t * src, int width, int height) {
   float kernel[5][5] = {
     {0.003765, 0.015019, 0.023792, 0.015019, 0.003765},
