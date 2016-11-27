@@ -12,10 +12,13 @@ else
 endif
 LIBS=-lavutil -lavformat -lavcodec -lavdevice -lswscale
 
-all: naive async basic main
+all: naive async basic blank main
 
 main: $(SRCDIR)/main.cpp
-	$(CXX) $(SRCDIR)/main.cpp $(OBJDIR)/naive.o -o $(BINDIR)/main $(CPPFLAGS) $(LIBS) $(CUDA_LIBS)
+	$(CXX) $(SRCDIR)/main.cpp $(SRCDIR)/pipeline.cpp $(OBJDIR)/blank.o -o $(BINDIR)/main $(CPPFLAGS) $(LIBS) $(CUDA_LIBS)
+
+blank: $(SRCDIR)/blank.cpp
+	$(CXX) -c $(SRCDIR)/blank.cpp -o $(OBJDIR)/blank.o $(CPPFLAGS)
 
 naive: $(SRCDIR)/naive.cpp
 	$(CXX) -c $(SRCDIR)/naive.cpp -o $(OBJDIR)/naive.o $(CPPFLAGS)
