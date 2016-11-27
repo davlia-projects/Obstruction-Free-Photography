@@ -1,5 +1,14 @@
 #pragma once
 
-void blurFrame(uint8_t * dst, uint8_t * src, int width, int height);
-void init(int width, int height);
-void cleanup();
+#include "pipeline.h"
+
+class NaiveBlur: public Pipeline {
+  private:
+    int width;
+    int height;
+    uint8_t * tempBuffer;
+  public:
+    NaiveBlur(int width, int height);
+    int processFrame(uint8_t * frmae);
+    AVPixelFormat getPixelFormat();
+};
