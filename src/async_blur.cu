@@ -2,10 +2,55 @@
 #include <stdint.h>
 #include "basic_blur.h"
 
-static uint8_t * dev_src[3];
-static uint8_t * dev_dst[3];
-static int cur = 0;
-static cudaStream_t uploadStream, downloadStream, computeStream;
+AsyncBlur::AsyncBlur(int width, int height) {
+  this->width = width;
+  this->height = height;
+  int sz = sizeof(uint8_t) * width * height * 3;
+  this->tmp_dst = (uint8_t *) malloc(sz);
+  for (int i = 0; i < 3; i++) {
+		cudaMalloc(&this->dev_src[i], sz);
+		cudaMalloc(&this->dev_dst[i], sz);
+	}
+	cudaStreamCreate(&this->uploadStream);
+	cudaStreamCreate(&this->computeStream);
+	cudaStreamCreate(&this->downloadStream);
+  this->cur = 0;
+}
+
+AsyncBlur::~AsyncBlur() {
+  for (int i = 0; i < 3; i++) {
+		cudaFree(this->dev_src[i]);
+		cudaFree(this->dev_dst[i]);
+	}
+  free(this->tmp_dst);
+}
+
+AVPixelFormat AsyncBlur::getPixelFormat() {
+  return AV_PIX_FMT_RGB24;
+}
+
+int AsyncBlur::processFrame(uint8_t * frame) {
+  int sz = sizeof(uint8_t) * width * height * 3;
+  cudaMemcpyAsync(this->dev_src[this->cur % 3], frame, sz, cudaMemcpyHostToDevice, this->uploadStream);
+  const dim3 blockSize2d(8, 8);
+	const dim3 blocksPerGrid2d(
+		(this->width + blockSize2d.x - 1) / blockSize2d.x,
+		(this->height + blockSize2d.y - 1) / blockSize2d.y);
+	
+	if (this->cur >= 1) {
+		kernGaussianBlur<<<blocksPerGrid2d, blockSize2d, 0, this->computeStream>>>(
+			this->width, this->height, this->dev_dst[(this->cur - 1) % 3], this->dev_src[(this->cur + 1) % 3]);
+	}
+	if (this->cur >= 2) {
+		cudaMemcpyAsync(this->tmp_dst, this->dev_dst[(this->cur - 2) % 3], sz, cudaMemcpyDeviceToHost, this->downloadStream);
+	}
+	cudaDeviceSynchronize();
+  this->cur++;
+  // TODO: can we avoid this memcpy?
+  memcpy(frame, this->tmp_dst, sz);
+
+  return (this->cur >= 3) ? 0 : 1;
+}
 
 __global__ void kernGaussianBlur(int width, int height, uint8_t * dst, uint8_t * src) {
 	int x = (blockIdx.x * blockDim.x) + threadIdx.x;
@@ -39,42 +84,4 @@ __global__ void kernGaussianBlur(int width, int height, uint8_t * dst, uint8_t *
 	dst[idx + 2] = b;
 	return;
 }
-void init(int width, int height) {
-	int sz = sizeof(uint8_t) * width * height * 3;
-	for (int i = 0; i < 3; i++) {
-		cudaMalloc(&dev_src[i], sz);
-		cudaMalloc(&dev_dst[i], sz);
-	}
-	cudaStreamCreate(&uploadStream);
-	cudaStreamCreate(&computeStream);
-	cudaStreamCreate(&downloadStream);
-}
 
-void cleanup() {
-	for (int i = 0; i < 3; i++) {
-		cudaFree(dev_src[i]);
-		dev_src[i] = NULL;
-		cudaFree(dev_dst[i]);
-		dev_dst[i] = NULL;
-	}
-}
-
-void blurFrame(uint8_t * dst, uint8_t * src, int width, int height) {
-	int sz = sizeof(uint8_t) * width * height * 3;
-	cudaMemcpyAsync(dev_src[cur % 3], src, sz, cudaMemcpyHostToDevice, uploadStream);
-	const dim3 blockSize2d(8, 8);
-	const dim3 blocksPerGrid2d(
-		(width + blockSize2d.x - 1) / blockSize2d.x,
-		(height + blockSize2d.y - 1) / blockSize2d.y);
-	
-	if (cur >= 1) {
-		kernGaussianBlur<<<blocksPerGrid2d, blockSize2d, 0, computeStream>>>(
-			width, height, dev_dst[(cur - 1) % 3], dev_src[(cur + 1) % 3]);
-	}
-	if (cur >= 2) {
-		cudaMemcpyAsync(dst, dev_dst[(cur - 2) % 3], sz, cudaMemcpyDeviceToHost, downloadStream);
-	}
-	cudaDeviceSynchronize();
-	cur++;
-	return;
-}

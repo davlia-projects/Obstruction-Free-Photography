@@ -1,5 +1,23 @@
 #pragma once
 
-void init(int width, int height);
-void cleanup();
-void blurFrame(uint8_t * dst, uint8_t * src, int width, int height);
+#include <cuda.h>
+#include "pipeline.h"
+
+class AsyncBlur: public Pipeline {
+  private:
+    int width;
+    int height;
+    uint8_t * dev_src[3];
+    uint8_t * dev_dst[3];
+    uint8_t * tmp_dst;
+    cudaStream_t uploadStream;
+    cudaStream_t downloadStream;
+    cudaStream_t computeStream;
+    int cur;
+
+  public:
+    AsyncBlur(int width, int height);
+    ~AsyncBlur();
+    int processFrame(uint8_t * frame);
+    AVPixelFormat getPixelFormat();
+};

@@ -9,6 +9,6 @@ class NaiveBlur: public Pipeline {
     uint8_t * tempBuffer;
   public:
     NaiveBlur(int width, int height);
-    int processFrame(uint8_t * frmae);
+    int processFrame(uint8_t * frame);
     AVPixelFormat getPixelFormat();
 };
