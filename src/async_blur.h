@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cuda.h>
+#include <cuda_runtime.h>
 #include "pipeline.h"
 
 class AsyncBlur: public Pipeline {

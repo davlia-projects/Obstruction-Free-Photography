@@ -1,6 +1,7 @@
 #pragma once
-// Hack to include all c++ headers
-#include <bits/stdc++.h>
+#include <stdlib.h>
+#include <stdint.h>
+
 extern "C" {
 #include <libavutil/imgutils.h>
 #include <libavcodec/avcodec.h>

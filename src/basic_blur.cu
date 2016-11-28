@@ -2,38 +2,6 @@
 #include <stdint.h>
 #include "basic_blur.h"
 
-BasicBlur::BasicBlur(int width, int height) {
-  this->width = width;
-  this->height = height;
-  int sz = sizeof(uint8_t) * width * height * 3;
-  cudaMalloc(&this->dev_src, sz);
-  cudaMalloc(&this->dev_dst, sz);
-}
-
-BasicBlur::~BasicBlur() {
-  cudaFree(this->dev_src);
-  cudaFree(this->dev_dst);
-}
-
-AVPixelFormat BasicBlur::getPixelFormat() {
-  return AV_PIX_FMT_RGB24;
-}
-
-int BasicBlur::processFrame(uint8_t * frame) {
-  int sz = sizeof(uint8_t) * this->width * this->height * 3;
-  cudaMemcpy(this->dev_src, frame, sz, cudaMemcpyHostToDevice);
-
-  const dim3 blockSize2d(8, 8);
-	const dim3 blocksPerGrid2d(
-		(this->width + blockSize2d.x - 1) / blockSize2d.x,
-		(this->height + blockSize2d.y - 1) / blockSize2d.y);
-	
-	kernGaussianBlur<<<blocksPerGrid2d, blockSize2d>>>(this->width, this->height, this->dev_dst, this->dev_src);
-	cudaDeviceSynchronize();
-	cudaMemcpy(frame, this->dev_dst, sz, cudaMemcpyDeviceToHost);
-  return 0;
-}
-
 __global__ void kernGaussianBlur(int width, int height, uint8_t * dst, uint8_t * src) {
 	int x = (blockIdx.x * blockDim.x) + threadIdx.x;
 	int y = (blockIdx.y * blockDim.y) + threadIdx.y;
@@ -65,5 +33,37 @@ __global__ void kernGaussianBlur(int width, int height, uint8_t * dst, uint8_t *
 	dst[idx + 1] = g;
 	dst[idx + 2] = b;
 	return;
+}
+
+BasicBlur::BasicBlur(int width, int height) {
+  this->width = width;
+  this->height = height;
+  int sz = sizeof(uint8_t) * width * height * 3;
+  cudaMalloc(&this->dev_src, sz);
+  cudaMalloc(&this->dev_dst, sz);
+}
+
+BasicBlur::~BasicBlur() {
+  cudaFree(this->dev_src);
+  cudaFree(this->dev_dst);
+}
+
+AVPixelFormat BasicBlur::getPixelFormat() {
+  return AV_PIX_FMT_RGB24;
+}
+
+int BasicBlur::processFrame(uint8_t * frame) {
+  int sz = sizeof(uint8_t) * this->width * this->height * 3;
+  cudaMemcpy(this->dev_src, frame, sz, cudaMemcpyHostToDevice);
+
+  const dim3 blockSize2d(8, 8);
+	const dim3 blocksPerGrid2d(
+		(this->width + blockSize2d.x - 1) / blockSize2d.x,
+		(this->height + blockSize2d.y - 1) / blockSize2d.y);
+	
+	kernGaussianBlur<<<blocksPerGrid2d, blockSize2d>>>(this->width, this->height, this->dev_dst, this->dev_src);
+	cudaDeviceSynchronize();
+	cudaMemcpy(frame, this->dev_dst, sz, cudaMemcpyDeviceToHost);
+  return 0;
 }
 

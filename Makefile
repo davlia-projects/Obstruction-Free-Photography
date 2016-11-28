@@ -4,7 +4,7 @@ BINDIR=bin
 CPPFLAGS=-g -Wall -Wextra -std=c++11 -I $(SRCDIR)
 CXX=g++
 NVXX=nvcc
-HAS_CUDA=n
+HAS_CUDA=y
 ifeq ($(HAS_CUDA),y)
 	CUDA_LIBS=-lcudadevrt -lcudart -lcuda
 else
@@ -15,7 +15,7 @@ LIBS=-lavutil -lavformat -lavcodec -lavdevice -lswscale
 all: naive async basic blank main
 
 main: $(SRCDIR)/main.cpp
-	$(CXX) $(SRCDIR)/main.cpp $(SRCDIR)/pipeline.cpp $(OBJDIR)/blank.o -o $(BINDIR)/main $(CPPFLAGS) $(LIBS) $(CUDA_LIBS)
+	$(CXX) $(SRCDIR)/main.cpp $(SRCDIR)/pipeline.cpp $(OBJDIR)/async_blur.o -o $(BINDIR)/main $(CPPFLAGS) $(LIBS) $(CUDA_LIBS)
 
 blank: $(SRCDIR)/blank.cpp
 	$(CXX) -c $(SRCDIR)/blank.cpp -o $(OBJDIR)/blank.o $(CPPFLAGS)
@@ -25,12 +25,12 @@ naive: $(SRCDIR)/naive.cpp
 
 async: $(SRCDIR)/async_blur.cu
 ifeq ($(HAS_CUDA),y)
-	$(NVXX) -c $(SRCDIR)/async_blur.cu -o $(OBJDIR)/async_blur.o $(CPPFLAGS)
+	$(NVXX) -c $(SRCDIR)/async_blur.cu -o $(OBJDIR)/async_blur.o
 endif
 
 basic: $(SRCDIR)/basic_blur.cu
 ifeq ($(HAS_CUDA),y)
-	$(CXX) -c $(SRCDIR)/basic_blur.cu -o $(OBJDIR)/basic_blur.o $(CPPFLAGS)
+	$(NVXX) -c $(SRCDIR)/basic_blur.cu -o $(OBJDIR)/basic_blur.o
 endif
 
 clean:

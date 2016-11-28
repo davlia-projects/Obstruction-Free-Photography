@@ -8,7 +8,7 @@ extern "C" {
 }
 
 #include "pipeline.h"
-#include "blank.h"
+#include "async_blur.h"
 using namespace std;
 
 
@@ -17,7 +17,7 @@ int main(int argc, char * argv[]) {
     printf("Usage: %s [input file] [output file]\n", argv[0]);
     return 1;
   }
-  Pipeline * pipeline = new BlankPipeline();
+  Pipeline * pipeline = new AsyncBlur(640, 480);
   VideoProcessor * processor = new VideoProcessor(pipeline, argv[1], argv[2]);
   while (processor->processFrame() >= 0);
   return 0;
