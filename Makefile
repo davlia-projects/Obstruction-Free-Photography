@@ -12,13 +12,16 @@ else
 endif
 LIBS=-lavutil -lavformat -lavcodec -lavdevice -lswscale
 
-all: naive async basic unified blank main
+all: naive async basic unified blank diff diffblur main
 
 main: $(SRCDIR)/main.cpp
-	$(CXX) $(SRCDIR)/main.cpp $(SRCDIR)/pipeline.cpp $(OBJDIR)/unified_blur.o -o $(BINDIR)/main $(CPPFLAGS) $(LIBS) $(CUDA_LIBS)
+	$(CXX) $(SRCDIR)/main.cpp $(SRCDIR)/pipeline.cpp $(OBJDIR)/diff.o -o $(BINDIR)/main $(CPPFLAGS) $(LIBS) $(CUDA_LIBS)
 
 blank: $(SRCDIR)/blank.cpp
 	$(CXX) -c $(SRCDIR)/blank.cpp -o $(OBJDIR)/blank.o $(CPPFLAGS)
+
+diff: $(SRCDIR)/diff.cpp
+	$(CXX) -c $(SRCDIR)/diff.cpp -o $(OBJDIR)/diff.o $(CPPFLAGS)
 
 naive: $(SRCDIR)/naive.cpp
 	$(CXX) -c $(SRCDIR)/naive.cpp -o $(OBJDIR)/naive.o $(CPPFLAGS)
@@ -37,5 +40,11 @@ unified: $(SRCDIR)/unified_blur.cu
 ifeq ($(HAS_CUDA),y)
 	$(NVXX) -c $(SRCDIR)/unified_blur.cu -o $(OBJDIR)/unified_blur.o
 endif
+
+diffblur: $(SRCDIR)/diff_blur.cu
+ifeq ($(HAS_CUDA),y)
+	$(NVXX) -c $(SRCDIR)/diff_blur.cu -o $(OBJDIR)/diff_blur.o
+endif
+
 clean:
 	rm bin/* obj/*
