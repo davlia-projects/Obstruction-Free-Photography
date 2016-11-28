@@ -8,7 +8,8 @@ extern "C" {
 }
 
 #include "pipeline.h"
-#include "diff.h"
+#include "diff_blur.h"
+#include "cuda.h"
 using namespace std;
 
 
@@ -17,7 +18,7 @@ int main(int argc, char * argv[]) {
     printf("Usage: %s [input file] [output file]\n", argv[0]);
     return 1;
   }
-  Pipeline * pipeline = new Diff(640, 480);
+  Pipeline * pipeline = new DiffBlur(640, 480);
   VideoProcessor * processor = new VideoProcessor(pipeline, argv[1], argv[2]);
 	auto startTime = chrono::high_resolution_clock::now();
   while (processor->processFrame() >= 0) {
@@ -26,6 +27,9 @@ int main(int argc, char * argv[]) {
 			chrono::duration<float> diff = curTime - startTime;
 			float secs = diff.count();
 			printf("FPS: %f\n", (float) processor->getFrameCounter() / secs);
+		}
+		if (processor->getFrameCounter() == 300) {
+			break;
 		}
 	}
   return 0;
