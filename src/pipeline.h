@@ -52,4 +52,5 @@ class VideoProcessor {
     VideoProcessor(Pipeline * pipeline, char * inputFile, char * outputFile);
     ~VideoProcessor();
     int processFrame();
+		int getFrameCounter();
 };

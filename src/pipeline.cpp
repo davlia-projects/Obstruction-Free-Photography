@@ -78,6 +78,10 @@ int VideoProcessor::processFrame() {
   return 0;
 }
 
+int VideoProcessor::getFrameCounter() {
+	return this->frameCounter;
+}
+
 void VideoProcessor::initInput(char * inputFile) {
   this->formatCtx = avformat_alloc_context();
   if (avformat_open_input(&this->formatCtx, inputFile, NULL, NULL) != 0) {

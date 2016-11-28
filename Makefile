@@ -12,10 +12,10 @@ else
 endif
 LIBS=-lavutil -lavformat -lavcodec -lavdevice -lswscale
 
-all: naive async basic blank main
+all: naive async basic unified blank main
 
 main: $(SRCDIR)/main.cpp
-	$(CXX) $(SRCDIR)/main.cpp $(SRCDIR)/pipeline.cpp $(OBJDIR)/async_blur.o -o $(BINDIR)/main $(CPPFLAGS) $(LIBS) $(CUDA_LIBS)
+	$(CXX) $(SRCDIR)/main.cpp $(SRCDIR)/pipeline.cpp $(OBJDIR)/unified_blur.o -o $(BINDIR)/main $(CPPFLAGS) $(LIBS) $(CUDA_LIBS)
 
 blank: $(SRCDIR)/blank.cpp
 	$(CXX) -c $(SRCDIR)/blank.cpp -o $(OBJDIR)/blank.o $(CPPFLAGS)
@@ -33,5 +33,9 @@ ifeq ($(HAS_CUDA),y)
 	$(NVXX) -c $(SRCDIR)/basic_blur.cu -o $(OBJDIR)/basic_blur.o
 endif
 
+unified: $(SRCDIR)/unified_blur.cu
+ifeq ($(HAS_CUDA),y)
+	$(NVXX) -c $(SRCDIR)/unified_blur.cu -o $(OBJDIR)/unified_blur.o
+endif
 clean:
 	rm bin/* obj/*
