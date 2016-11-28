@@ -1,4 +1,4 @@
-main
 .*.swp
-*.o
-*.mp4
+obj/*
+bin/*
+video/*
