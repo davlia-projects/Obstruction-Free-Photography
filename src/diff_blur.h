@@ -20,6 +20,9 @@ class DiffBlur: public Pipeline {
     float * dev_prevblur;
     uint8_t * dev_frame;
 		thrust::device_ptr<DiffPoint> dev_thrust_diffPoints;
+
+		int kernSize;
+		float * dev_kernel;
   public:
     DiffBlur(int width, int height);
     ~DiffBlur();

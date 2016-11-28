@@ -9,7 +9,6 @@ extern "C" {
 
 #include "pipeline.h"
 #include "diff_blur.h"
-#include "cuda.h"
 using namespace std;
 
 
