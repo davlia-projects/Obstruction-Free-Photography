@@ -11,6 +11,8 @@ VideoProcessor::VideoProcessor(Pipeline * pipeline, char * inputFile, char * out
   this->initInput(inputFile);
   this->initOutput(outputFile);
   this->initIntermediate(pipeline);
+  
+  printf("Width: %d, height: %d\n", this->inputCtx->width, this->inputCtx->height);
 
   this->frameCounter = 0;
 }

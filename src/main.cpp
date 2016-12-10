@@ -8,7 +8,7 @@ extern "C" {
 }
 
 #include "pipeline.h"
-#include "diff_blur.h"
+#include "obstruction_free/obstruction_free.h"
 using namespace std;
 
 
@@ -17,7 +17,7 @@ int main(int argc, char * argv[]) {
     printf("Usage: %s [input file] [output file]\n", argv[0]);
     return 1;
   }
-  Pipeline * pipeline = new DiffBlur(640, 480);
+  Pipeline * pipeline = new ObstructionFree(640, 480, 5);
   VideoProcessor * processor = new VideoProcessor(pipeline, argv[1], argv[2]);
 	auto startTime = chrono::high_resolution_clock::now();
   while (processor->processFrame() >= 0) {

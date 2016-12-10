@@ -4,7 +4,7 @@ BINDIR=bin
 CPPFLAGS=-g -Wall -Wextra -std=c++11 -I $(SRCDIR)
 CXX=g++
 NVXX=nvcc
-HAS_CUDA=y
+HAS_CUDA=n
 ifeq ($(HAS_CUDA),y)
 	CUDA_LIBS=-lcudadevrt -lcudart -lcuda
 else
@@ -12,10 +12,10 @@ else
 endif
 LIBS=-lavutil -lavformat -lavcodec -lavdevice -lswscale
 
-all: naive async basic unified blank diff diffblur main
+all: naive async basic unified blank diff diffblur obstruction main
 
 main: $(SRCDIR)/main.cpp
-	$(CXX) $(SRCDIR)/main.cpp $(SRCDIR)/pipeline.cpp $(OBJDIR)/diff_blur.o -o $(BINDIR)/main $(CPPFLAGS) $(LIBS) $(CUDA_LIBS)
+	$(CXX) $(SRCDIR)/main.cpp $(SRCDIR)/pipeline.cpp $(OBJDIR)/obstruction_free.o -o $(BINDIR)/main $(CPPFLAGS) $(LIBS) $(CUDA_LIBS)
 
 blank: $(SRCDIR)/blank.cpp
 	$(CXX) -c $(SRCDIR)/blank.cpp -o $(OBJDIR)/blank.o $(CPPFLAGS)
@@ -45,6 +45,9 @@ diffblur: $(SRCDIR)/diff_blur.cu
 ifeq ($(HAS_CUDA),y)
 	$(NVXX) -c $(SRCDIR)/diff_blur.cu -o $(OBJDIR)/diff_blur.o
 endif
+
+obstruction: $(SRCDIR)/obstruction_free/obstruction_free.cpp
+	$(CXX) -c $(SRCDIR)/obstruction_free/obstruction_free.cpp -o $(OBJDIR)/obstruction_free.o $(CPPFLAGS)
 
 clean:
 	rm bin/* obj/*
