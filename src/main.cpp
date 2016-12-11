@@ -85,7 +85,10 @@ int main() {
     flowPoints[(int)p.y * image1.width() + (int)p.x] = glm::ivec2((int)t.second[i].x, (int)t.second[i].y);
   }
   separatePoints(image1.width(), image1.height(), group1, group2, sparseMap, flowPoints);
-  for (int y = 0; y < image1.height(); y++) {
+  auto v1 = copyPoint(image1.width(), image1.height(), group1, flowPoints);
+  auto v2 = copyPoint(image1.width(), image1.height(), group2, flowPoints);
+
+  /*for (int y = 0; y < image1.height(); y++) {
     for (int x = 0; x < image1.width(); x++) {
       if (group1[y * image1.width() + x]) {
         flowViz[3 * (y * image1.width() + x)] = 255;
@@ -95,7 +98,7 @@ int main() {
     }
   }
   Mat mat(Size(image1.width(), image1.height()), CV_8UC3, flowViz);
-  imwrite("flow.jpg", mat);
+  imwrite("flow.jpg", mat);*/
 
   /*stride(N, flowViz, out1);
   toIMG(out1, image1);

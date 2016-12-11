@@ -96,3 +96,15 @@ void separatePoints(int width, int height, bool * pointGroup1, bool * pointGroup
     if (sparseMap[i] && !pointGroup1[i]) pointGroup2[i] = true;
   }
 }
+
+vector<pair<glm::ivec2, glm::ivec2>> copyPoints(int width, int height, bool * mask, glm::ivec2 * points) {
+  vector<pair<glm::Ivec2, glm::ivec2>> ret;
+  for (int y = 0; y < height; y++) {
+    for (int x = 0; x < width; x++) {
+      if (mask[y * width + x]) {
+        ret.push_back(make_pair(glm::ivec2(x, y), points[y * width + x]));
+      }
+    }
+  }
+  return ret;
+}
