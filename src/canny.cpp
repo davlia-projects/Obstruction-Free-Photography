@@ -143,17 +143,16 @@ void hysteresis(int N, int width, int height, unsigned char * in) {
 
 
 unsigned char * Canny::edge(int N, int width, int height, unsigned char * in) {
-  unsigned char * grayscale = new unsigned char[N / 3];
-  unsigned char * smooth = new unsigned char[N / 3];
-  unsigned char * gradient = new unsigned char[N / 3];
-  unsigned char * edgeDir = new unsigned char[N / 3];
+  unsigned char * smooth = new unsigned char[N];
+  unsigned char * gradient = new unsigned char[N];
+  unsigned char * edgeDir = new unsigned char[N];
 
-  kernSmooth(N / 3, width, height, grayscale, smooth, gaussian, 5);
-  kernGradient(N / 3, width, height, smooth, gradient, edgeDir);
-  nonMaxSuppression(N / 3, width, height, edgeDir, gradient);
-  hysteresis(N / 3, width, height, gradient); // can use stream compaction
+  kernSmooth(N, width, height, in, smooth, gaussian, 5);
+  kernGradient(N, width, height, smooth, gradient, edgeDir);
+  nonMaxSuppression(N, width, height, edgeDir, gradient);
+  hysteresis(N, width, height, gradient); // can use stream compaction
 
-  delete[] grayscale, smooth, gradient, edgeDir;
+  delete[] smooth, gradient, edgeDir;
 
   return gradient;
 }

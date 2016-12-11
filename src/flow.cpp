@@ -3,7 +3,7 @@
 
 #define ITERS 10
 #define RADIUS 4
-#define LABELS 16
+#define LABELS 25
 #define LAMBDA 20
 #define SMOOTHNESS 2
 enum DIR {LEFT, RIGHT, UP, DOWN, DATA};
