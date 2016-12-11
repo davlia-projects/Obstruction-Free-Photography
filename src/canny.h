@@ -1,5 +1,5 @@
 #pragma once
 
 namespace Canny {
-  unsigned char * edge(int N, unsigned char * in, int width, int height);
+  unsigned char * edge(int N, int width, int height, unsigned char * in);
 }

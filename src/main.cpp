@@ -1,6 +1,7 @@
 #include <iostream>
 #include "CImg.h"
 #include "canny.h"
+#include "flow.h"
 
 using namespace cimg_library;
 
@@ -27,15 +28,61 @@ void toIMG(unsigned char * in, CImg<unsigned char> & image) {
   }
 }
 
-int main() {
-  CImg<unsigned char> image("img/hanoi_input_1.png");
-  unsigned char * in = toRGB(image);
-  unsigned char * out = Canny::edge(image.size(), in, image.width(), image.height());
-  toIMG(out, image);
-
-  CImgDisplay main_disp(image,"Click a point");
-  while (!main_disp.is_closed()) {
-    main_disp.wait();
+void kernGrayscale(int N, unsigned char * in, unsigned char * out) {
+  float avg = 0;
+  for (int i = 0; i < N; i += 3) {
+    avg = 0;
+    avg += in[i];
+    avg += in[i+1];
+    avg += in[i+2];
+    out[i / 3] = avg / 3;
   }
+}
+
+void stride(int N, unsigned char * in, unsigned char * out) {
+  for (int i = 0; i < N; i += 3) {
+    out[i] = in[i / 3];
+    out[i + 1] = in[i / 3];
+    out[i + 2] = in[i / 3];
+  }
+}
+
+int main() {
+  CImg<unsigned char> image1("img/tsukuba-imL.png");
+  CImg<unsigned char> image2("img/tsukuba-imR.png");
+
+  int N = image1.width() * image1.height() * 3;
+  unsigned char * out1 = new unsigned char[N];
+  unsigned char * out2 = new unsigned char[N];
+  unsigned char * g1 = new unsigned char[N / 3];
+  unsigned char * g2 = new unsigned char[N / 3];
+
+  unsigned char * in1 = toRGB(image1);
+  unsigned char * in2 = toRGB(image2);
+  kernGrayscale(N, in1, g1);
+  kernGrayscale(N, in2, g2);
+
+  unsigned char * gradient1 = Canny::edge(N / 3, image1.width(), image1.height(), g1);
+  unsigned char * gradient2 = Canny::edge(N / 3, image2.width(), image2.height(), g2);
+
+  // unsigned char * flow = Flow::edgeFlow(N / 3, image1.width(), image1.height(), gradient1, gradient2);
+
+  stride(N, gradient1, out1);
+  toIMG(out1, image1);
+  CImgDisplay main_disp1(image1,"Click a point");
+  while (!main_disp1.is_closed()) {
+    main_disp1.wait();
+  }
+  // stride(N, gradient1, out1);
+  // stride(N, gradient2, out2);
+  // toIMG(out1, image1);
+  // toIMG(out2, image2);
+  //
+  // CImgDisplay main_disp1(image1,"Click a point");
+  // CImgDisplay main_disp2(image2,"Click a point");
+  // while (!main_disp1.is_closed() && !main_disp2.is_closed()) {
+  //   main_disp1.wait();
+  //   main_disp2.wait();
+  // }
   return 0;
 }
