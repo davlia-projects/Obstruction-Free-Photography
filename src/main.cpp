@@ -101,6 +101,7 @@ int main() {
   imwrite("flow.jpg", mat);*/
 
   /*stride(N, flowViz, out1);
+>>>>>>> 54ef39688d222cdf76d2be20a2332f5d05a5752d
   toIMG(out1, image1);
   CImgDisplay main_disp1(image1,"Click a point");
   while (!main_disp1.is_closed()) {

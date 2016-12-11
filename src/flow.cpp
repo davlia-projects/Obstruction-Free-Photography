@@ -26,7 +26,7 @@ unsigned int datacost(int N, int width, int height, unsigned char * ref, unsigne
       int lx = l / (2 * RADIUS + 1) - RADIUS;
       int ly = l % (2 * RADIUS + 1) - RADIUS;
       int refPixel = ref[(y + dy) * width + x + dx];
-      int tarPixel = ref[(y + dy + ly) * width + x + dx + lx];
+      int tarPixel = ref[(y + dy) * width + x + dx - l];
       sum += abs(refPixel - tarPixel);
     }
   }
