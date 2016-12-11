@@ -65,9 +65,9 @@ int main() {
   unsigned char * gradient1 = Canny::edge(N / 3, image1.width(), image1.height(), g1);
   unsigned char * gradient2 = Canny::edge(N / 3, image2.width(), image2.height(), g2);
 
-  // unsigned char * flow = Flow::edgeFlow(N / 3, image1.width(), image1.height(), gradient1, gradient2);
+  unsigned char * flow = Flow::edgeFlow(N / 3, image1.width(), image1.height(), gradient1, gradient2);
 
-  stride(N, gradient1, out1);
+  stride(N, flow, out1);
   toIMG(out1, image1);
   CImgDisplay main_disp1(image1,"Click a point");
   while (!main_disp1.is_closed()) {

@@ -5,7 +5,7 @@ CPPFLAGS=-g -Wall -Wextra -std=c++14 -I $(SRCDIR) -I/opt/X11/include
 CXX=g++
 NVXX=nvcc
 LIBS=-lX11 -lXext -lpthread -L/opt/X11/lib/
-OBJS=$(OBJDIR)/canny.o $(OBJDIR)/flow.o
+OBJS=$(OBJDIR)/canny.o $(OBJDIR)/flow.o $(OBJDIR)/interpolate.o
 ifeq ($(HAS_CUDA),y)
 	CUDA_LIBS=-lcudadevrt -lcudart -lcuda
 else
@@ -21,3 +21,6 @@ canny: $(SRCDIR)/canny.cpp
 
 flow: $(SRCDIR)/flow.cpp
 	$(CXX) -c $(SRCDIR)/flow.cpp -o $(OBJDIR)/flow.o $(CPPFLAGS)
+
+interpolate: $(SRCDIR)/interpolate.cpp
+	$(CXX) -c $(SRCDIR)/interpolate.cpp -o $(OBJDIR)/interpolate.o $(CPPFLAGS)
