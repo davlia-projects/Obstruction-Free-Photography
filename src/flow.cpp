@@ -2,8 +2,8 @@
 #include "flow.h"
 
 #define ITERS 10
-#define RADIUS 2
-#define LABELS 25
+#define RADIUS 4
+#define LABELS 81
 #define LAMBDA 20
 #define SMOOTHNESS 2
 enum DIR {LEFT, RIGHT, UP, DOWN, DATA};

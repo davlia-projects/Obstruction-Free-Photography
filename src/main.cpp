@@ -2,8 +2,11 @@
 #include "CImg.h"
 #include "canny.h"
 #include "flow.h"
+#include "lk.h"
+#include "kmeans.h"
 
 using namespace cimg_library;
+using namespace std;
 
 unsigned char * toRGB(CImg<unsigned char> & image) {
   unsigned char * in = new unsigned char[image.size()];
@@ -48,8 +51,8 @@ void stride(int N, unsigned char * in, unsigned char * out) {
 }
 
 int main() {
-  CImg<unsigned char> image1("img/tsukuba-imL.png");
-  CImg<unsigned char> image2("img/tsukuba-imR.png");
+  CImg<unsigned char> image1("img/hanoi_input_1.png");
+  CImg<unsigned char> image2("img/hanoi_input_2.png");
 
   int N = image1.width() * image1.height() * 3;
   unsigned char * out1 = new unsigned char[N];
@@ -65,14 +68,45 @@ int main() {
   unsigned char * gradient1 = Canny::edge(N / 3, image1.width(), image1.height(), g1);
   unsigned char * gradient2 = Canny::edge(N / 3, image2.width(), image2.height(), g2);
 
-  unsigned char * flow = Flow::edgeFlow(N / 3, image1.width(), image1.height(), gradient1, gradient2);
+  //unsigned char * flow = Flow::edgeFlow(N / 3, image1.width(), image1.height(), gradient1, gradient2);
+  auto t = lkEdgeFlow(N / 3, image1.width(), image1.height(), gradient1, g1, g2);
+  unsigned char * flowViz = new unsigned char[N];
+  glm::ivec2 * flowPoints = new glm::ivec2[N / 3];
+  bool * sparseMap = new bool[N / 3];
+  bool * group1 = new bool[N / 3];
+  bool * group2 = new bool[N / 3];
+  memset(sparseMap, 0, (N / 3) * sizeof(bool));
+  memset(flowViz, 0, N * sizeof(unsigned char));
+  for (int i = 0; i < t.first.size(); i++) {
+    Point2f & p = t.first[i];
+    Point2f & d = t.second[i];
+    //flowViz[(int)p.y * image1.width() + (int)p.x] = sqrt(d.x * d.x + d.y * d.y);
+    sparseMap[(int)p.y * image1.width() + (int)p.x] = 1;
+    flowPoints[(int)p.y * image1.width() + (int)p.x] = glm::ivec2((int)t.second[i].x, (int)t.second[i].y);
+  }
+  separatePoints(image1.width(), image1.height(), group1, group2, sparseMap, flowPoints);
+  auto v1 = copyPoint(image1.width(), image1.height(), group1, flowPoints);
+  auto v2 = copyPoint(image1.width(), image1.height(), group2, flowPoints);
 
-  stride(N, flow, out1);
+  /*for (int y = 0; y < image1.height(); y++) {
+    for (int x = 0; x < image1.width(); x++) {
+      if (group1[y * image1.width() + x]) {
+        flowViz[3 * (y * image1.width() + x)] = 255;
+      } else if (group2[y * image1.width() + x]) {
+        flowViz[3 * (y * image1.width() + x) + 1] = 255;
+      }
+    }
+  }
+  Mat mat(Size(image1.width(), image1.height()), CV_8UC3, flowViz);
+  imwrite("flow.jpg", mat);*/
+
+  /*stride(N, flowViz, out1);
+>>>>>>> 54ef39688d222cdf76d2be20a2332f5d05a5752d
   toIMG(out1, image1);
   CImgDisplay main_disp1(image1,"Click a point");
   while (!main_disp1.is_closed()) {
     main_disp1.wait();
-  }
+  }*/
   // stride(N, gradient1, out1);
   // stride(N, gradient2, out2);
   // toIMG(out1, image1);
