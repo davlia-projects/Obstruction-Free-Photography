@@ -8,7 +8,7 @@
 using namespace glm;
 using namespace std;
 
-typedef mot (pair<ivec2, ivec2>);
+typedef pair<ivec2, ivec2> mot;
 
 void knnInterpolate(int N, int width, int height, mot * sparse, mot * dense) {
   for (int i = 0; i < height; i++) {
