@@ -2,8 +2,10 @@
 #include "CImg.h"
 #include "canny.h"
 #include "flow.h"
+#include "lk.h"
 
 using namespace cimg_library;
+using namespace std;
 
 unsigned char * toRGB(CImg<unsigned char> & image) {
   unsigned char * in = new unsigned char[image.size()];
@@ -65,14 +67,17 @@ int main() {
   unsigned char * gradient1 = Canny::edge(N / 3, image1.width(), image1.height(), g1);
   unsigned char * gradient2 = Canny::edge(N / 3, image2.width(), image2.height(), g2);
 
-  // unsigned char * flow = Flow::edgeFlow(N / 3, image1.width(), image1.height(), gradient1, gradient2);
+  //unsigned char * flow = Flow::edgeFlow(N / 3, image1.width(), image1.height(), gradient1, gradient2);
+  //printf("GHJKL: %d %d %d\n", N / 3, image1.width(), image1.height());
+  cout << "a " << N/3 << "," << image1.width() << "," << image1.height() << endl;
+  lkEdgeFlow(N / 3, image1.width(), image1.height(), gradient1, g1, g2);
 
-  stride(N, gradient1, out1);
+  /*stride(N, flow, out1);
   toIMG(out1, image1);
   CImgDisplay main_disp1(image1,"Click a point");
   while (!main_disp1.is_closed()) {
     main_disp1.wait();
-  }
+  }*/
   // stride(N, gradient1, out1);
   // stride(N, gradient2, out2);
   // toIMG(out1, image1);
