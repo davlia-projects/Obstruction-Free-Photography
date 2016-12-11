@@ -11,7 +11,7 @@ ifeq ($(HAS_CUDA),y)
 else
 	CUDA_LIBS=
 endif
-all: canny flow main
+all: canny flow interpolate warp main
 
 main: $(SRCDIR)/main.cpp
 	$(CXX) $(SRCDIR)/main.cpp $(OBJS) -o $(BINDIR)/main $(CPPFLAGS) $(LIBS) $(CUDA_LIBS) `pkg-config opencv --cflags --libs`
@@ -24,3 +24,6 @@ flow: $(SRCDIR)/flow.cpp
 
 interpolate: $(SRCDIR)/interpolate.cpp
 	$(CXX) -c $(SRCDIR)/interpolate.cpp -o $(OBJDIR)/interpolate.o $(CPPFLAGS)
+
+warp: $(SRCDIR)/warp.cpp
+	$(CXX) -c $(SRCDIR)/warp.cpp -o $(OBJDIR)/warp.o $(CPPFLAGS)
