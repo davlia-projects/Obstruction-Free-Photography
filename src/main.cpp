@@ -52,14 +52,27 @@ void stride(int N, unsigned char * in, unsigned char * out) {
   }
 }
 
+const float gaussian[5 * 5] = {
+  2.f/159, 4.f/159, 5.f/159, 4.f/159, 2.f/159,
+  4.f/159, 9.f/159, 12.f/159, 9.f/159, 4.f/159,
+  5.f/159, 12.f/159, 15.f/159, 12.f/159, 2.f/159,
+  4.f/159, 9.f/159, 12.f/159, 9.f/159, 4.f/159,
+  2.f/159, 4.f/159, 5.f/159, 4.f/159, 2.f/159
+};
+
 int main() {
   const float SCALE_1_255 = (1.0f / 255.0f);
   CImg<unsigned char> images[5];
-  images[0] = CImg<unsigned char>("img/hanoi1.png");
+  /*images[0] = CImg<unsigned char>("img/hanoi1.png");
   images[1] = CImg<unsigned char>("img/hanoi2.png");
   images[2] = CImg<unsigned char>("img/hanoi3.png");
   images[3] = CImg<unsigned char>("img/hanoi4.png");
-  images[4] = CImg<unsigned char>("img/hanoi5.png");
+  images[4] = CImg<unsigned char>("img/hanoi5.png");*/
+  images[0] = CImg<unsigned char>("img/window1.png");
+  images[1] = CImg<unsigned char>("img/window2.png");
+  images[2] = CImg<unsigned char>("img/window3.png");
+  images[3] = CImg<unsigned char>("img/window4.png");
+  images[4] = CImg<unsigned char>("img/window5.png");
 
   int width = images[0].width();
   int height = images[0].height();
@@ -72,8 +85,14 @@ int main() {
   pair<vector<Point2f>, vector<Point2f>> edgeFlowPairs[5];
   for (int i = 0; i < 5; i++) {
     grayscale[i] = new unsigned char[N / 3];
-    in[i] = toRGB(images[i]);
-    kernGrayscale(N, in[i], grayscale[i]);
+    for (int y = 0; y < height; y++) {
+      for (int x = 0; x < width; x++) {
+        int idx = y * width + x;
+        grayscale[i][idx] = images[i](x, y, 0);
+      }
+    }
+    // in[i] = toRGB(images[i]);
+    // kernGrayscale(N, in[i], grayscale[i]);
   }
 
   printf("Detecting edges...\n");
@@ -88,6 +107,7 @@ int main() {
   bool * sparseMap = new bool[N / 3];
   pair<glm::ivec2, glm::ivec2> * denseBg[4];
   pair<glm::ivec2, glm::ivec2> * denseFg[4];
+  vector<float> * bgPixels = new vector<float>[N / 3];
   float * bgImg = new float[N / 3];
   float * fgImg = new float[N / 3];
   float * alpha = new float[N / 3];
@@ -95,7 +115,8 @@ int main() {
   memset(fgImg, 0, (N / 3) * sizeof(float));
   memset(alpha, 0, (N / 3) * sizeof(float));
   for (int i = 0; i < N/3; i++) {
-    fgImg[i] = bgImg[i] = grayscale[2][i];
+    fgImg[i] = bgImg[i] = grayscale[2][i] * 0.20f;
+    bgImg[i] = 255.0f;
   }
   for (int j = 0; j < 4; j++) {
     memset(sparseMap, 0, (N / 3) * sizeof(bool));
@@ -109,7 +130,7 @@ int main() {
     printf("Separating...\n");
     group1[j] = new bool[N / 3];
     group2[j] = new bool[N / 3];
-    separatePoints(width, height, group1[j], group2[j], sparseMap, pointDiffs, 7.5f, 30);
+    separatePoints(width, height, group1[j], group2[j], sparseMap, pointDiffs, 61.0f, 30);
 
     vector<pair<glm::ivec2, glm::ivec2>> fgPoints;
     vector<pair<glm::ivec2, glm::ivec2>> bgPoints;
@@ -135,16 +156,57 @@ int main() {
         glm::ivec2 warpBg = glm::ivec2(x, y) + denseBg[j][idx].second;
         warpBg.x = max(0, min(width - 1, warpBg.x));
         warpBg.y = max(0, min(height - 1, warpBg.y));
-        // bgImg[idx] += grayscale[nj][warpBg.y * width + warpBg.x];
-        bgImg[idx] = max(bgImg[idx], (float)grayscale[nj][warpBg.y * width + warpBg.x]);
+        // bgImg[idx] += grayscale[nj][warpBg.y * width + warpBg.x] * 0.20f;
+        // bgImg[idx] = max(bgImg[idx], (float)grayscale[nj][warpBg.y * width + warpBg.x]);
+        bgImg[idx] = min(bgImg[idx], (float)grayscale[nj][warpBg.y * width + warpBg.x]);
+        bgPixels[idx].push_back(grayscale[nj][warpBg.y * width + warpBg.x]);
         glm::ivec2 warpFg = glm::ivec2(x, y) + denseFg[j][idx].second;
         warpFg.x = max(0, min(width - 1, warpFg.x));
         warpFg.y = max(0, min(height - 1, warpFg.y));
-        // fgImg[idx] += grayscale[nj][warpFg.y * width + warpFg.x];
-        fgImg[idx] = min(fgImg[idx], (float)grayscale[nj][warpFg.y * width + warpFg.x]);
+        fgImg[idx] += grayscale[nj][warpFg.y * width + warpFg.x] * 0.20f;
+        // fgImg[idx] = min(fgImg[idx], (float)grayscale[nj][warpFg.y * width + warpFg.x]);
       }
     }
   }
+
+  // Spatial coherence
+  /*
+  for (int y = 0; y < height; y++) {
+    for (int x = 0; x < width; x++) {
+      int idx = y * width + x;
+      sort(bgPixels[idx].begin(), bgPixels[idx].end());
+      bgImg[idx] = bgPixels[idx][2];
+    }
+  }
+  
+  for (int i = 0; i < 10; i++) {
+    for (int y = 0; y < height; y++) {
+      for (int x = 0; x < width; x++) {
+        int idx = y * width + x;
+        float mn = 1e9;
+        int mj = 0;
+        for (int j = 0; j < 5; j++) {
+          float d = 0.0f;
+          for (int dy = -3; dy <= 3; dy++) {
+            for (int dx = -3; dx <= 3; dx++) {
+              int nx = max(0, min(width - 1, x + dx));
+              int ny = max(0, min(height - 1, y + dy));
+              float pd = bgImg[ny * width + nx] - bgPixels[idx][j];
+              d += fabs(pd);
+            }
+          }
+          float sd = bgImg[y * width - x] - (float)grayscale[2][idx];
+          d += fabs(sd) * 10;
+          if (d < mn) {
+            mn = d;
+            mj = j;
+          }
+        }
+        bgImg[idx] = bgPixels[idx][mj];
+      }
+    }
+  }
+  */
 
   unsigned char * bgViz = new unsigned char[N / 3];
   unsigned char * bgDelta = new unsigned char[N / 3];
@@ -156,13 +218,18 @@ int main() {
       // bgImg[idx] *= 0.25f;
       // fgImg[idx] *= 0.25f;
       bgViz[idx] = (unsigned char) bgImg[idx];
-      fgViz[idx] = (unsigned char) fgImg[idx];
-      if (fabs(bgImg[idx] - grayscale[2][idx]) < 40.0f) {
+      if (fabs(bgImg[idx] - grayscale[2][idx]) < 25.0f) {
         alpha[idx] = 1.0f;
         alphaViz[idx] = 255;
       } else {
         alpha[idx] = 0.0f;
         alphaViz[idx] = 0;
+      }
+      if (alpha[idx] > 0.0f) {
+        fgViz[idx] = 255;
+        bgViz[idx] = grayscale[2][idx];
+      } else {
+        fgViz[idx] = (unsigned char) fgImg[idx];
       }
       bgImg[idx] *= SCALE_1_255;
       fgImg[idx] *= SCALE_1_255;
@@ -226,8 +293,12 @@ int main() {
       int idx = y * width + x;
       bgDelta[idx] = bgViz[idx] - (unsigned char) (bgImg[idx] * 255.0f);
       bgViz[idx] = (unsigned char) (bgImg[idx] * 255.0f);
-      fgViz[idx] = (unsigned char) (fgImg[idx] * 255.0f);
       alphaViz[idx] = (unsigned char) (alpha[idx] * 255.0f);
+      if (alpha[idx] > 0.0f) {
+        fgViz[idx] = 255;
+      } else {
+        fgViz[idx] = (unsigned char) (fgImg[idx] * 255.0f);
+      }
     }
   }
   Mat fmat(Size(width, height), CV_8UC1, bgViz);
@@ -239,6 +310,25 @@ int main() {
   Mat fmat4(Size(width, height), CV_8UC1, bgDelta);
   imwrite("bg_delta.jpg", fmat4);
 
+  /*for (int y = 0; y < height; y++) {
+    for (int x = 0; x < width; x++) {
+      int idx = y * width + x;
+      float c = 0.0f;
+      for (int i = 0; i < FRAMES; i++) {
+        int ni = (i <= 2) ? i - 1 : i;
+        if (i == 0) {
+          ni = 2;
+        }
+        glm::vec2 v = VO[i * width * height + idx];
+        int nx = max(0, min(width - 1, (int)(x + v.x)));
+        int ny = max(0, min(height - 1, (int)(y + v.y)));
+        c += grayscale[ni][ny * width + nx];
+      }
+      bgViz[idx] = c / 5.0f;
+    }
+  }
+  Mat ffmat(Size(width, height), CV_8UC1, bgViz);
+  imwrite("bg_img3.jpg", ffmat);*/
 
   return 0;
 }

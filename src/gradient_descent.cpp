@@ -85,6 +85,8 @@ void GradientDescent::optimizeImageComponents() {
           - this->imgO[warpO(x, y, t)]
           - this->alpha[warpO(x, y, t)] * this->imgB[warpB(x, y, t)];
 
+        dataTerm *= LAMBDA_DT;
+
         w_1[idx(x, y, t)] = 1.0 / phi(dataTerm);
         glm::vec2 g;
         g = grad(this->imgB, x, y);
@@ -103,6 +105,8 @@ void GradientDescent::optimizeImageComponents() {
           this->sequence[idx(x, y, t)]
           - this->imgO[warpO(x, y, t)]
           - this->alpha[warpO(x, y, t)] * this->imgB[warpB(x, y, t)];
+
+        dataTerm *= LAMBDA_DT;
 
         imgO_gd[warpO(x, y, t)] -= dataTerm * w_1[idx(x, y)];
         alpha_gd[warpO(x, y, t)] -= dataTerm * imgB[warpB(x, y, t)] * w_1[idx(x, y)];
@@ -212,6 +216,8 @@ void GradientDescent::optimizeMotionFields() {
           - this->imgO[warpO(x, y, t)]
           - this->alpha[warpO(x, y, t)] * this->imgB[warpB(x, y, t)];
 
+        dataTerm *= LAMBDA_DT;
+
         glm::vec2 g, g2, gx, gy;
         glm::ivec2 wo, wb;
 
@@ -248,7 +254,7 @@ float GradientDescent::objectiveFunction() {
         pixRet += this->sequence[idx(x, y, t)];
         pixRet -= this->imgO[warpO(x, y, t)];
         pixRet -= this->alpha[warpO(x, y, t)] * this->imgB[warpB(x, y, t)];
-        ret += fabs(pixRet);
+        ret += fabs(pixRet) * LAMBDA_DT;
       }
     }
   }
@@ -314,14 +320,14 @@ int GradientDescent::idx(int x, int y, int t) {
 glm::ivec2 GradientDescent::iwarpO(int x, int y, int t) {
   glm::vec2 motion = this->VO[idx(x, y, t)];
   x = iclamp((int)motion.x, 0, this->width - 1);
-  y = iclamp((int)motion.y, 0, this->width - 1);
+  y = iclamp((int)motion.y, 0, this->height - 1);
   return glm::ivec2(x, y);
 }
 
 glm::ivec2 GradientDescent::iwarpB(int x, int y, int t) {
   glm::vec2 motion = this->VB[idx(x, y, t)];
   x = iclamp((int)motion.x, 0, this->width - 1);
-  y = iclamp((int)motion.y, 0, this->width - 1);
+  y = iclamp((int)motion.y, 0, this->height - 1);
   return glm::ivec2(x, y);
 }
 

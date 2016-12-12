@@ -26,7 +26,7 @@ const float gaussian[5 * 5] = {
 };
 
 
-void kernSmooth(int N, int width, int height, unsigned char * in, unsigned char * out, const float * kernel, int kernSize) {
+void Canny::kernSmooth(int N, int width, int height, unsigned char * in, unsigned char * out, const float * kernel, int kernSize) {
   float c;
   for (int x = 0; x < width; ++x) {
     for (int y = 0; y < height; ++y) {
@@ -147,7 +147,7 @@ unsigned char * Canny::edge(int N, int width, int height, unsigned char * in) {
   unsigned char * gradient = new unsigned char[N];
   unsigned char * edgeDir = new unsigned char[N];
 
-  kernSmooth(N, width, height, in, smooth, gaussian, 5);
+  Canny::kernSmooth(N, width, height, in, smooth, gaussian, 5);
   kernGradient(N, width, height, smooth, gradient, edgeDir);
   nonMaxSuppression(N, width, height, edgeDir, gradient);
   hysteresis(N, width, height, gradient); // can use stream compaction
