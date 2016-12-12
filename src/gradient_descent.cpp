@@ -176,7 +176,7 @@ void GradientDescent::optimizeImageComponents() {
         imgO[idx(x, y)] = 0.0f;
       }
       //printf("%f\n", imgB_gd[idx(x, y)]);
-      imgB[idx(x, y)] -= this->LEARNING_RATE1 * imgB_gd[idx(x, y)] * 100.0;
+      imgB[idx(x, y)] -= this->LEARNING_RATE1 * imgB_gd[idx(x, y)];
       if (imgB[idx(x, y)] >= 2.0f) {
         imgB[idx(x, y)] = 1.0f;
       } else if (imgB[idx(x, y)] <= -1.0f) {

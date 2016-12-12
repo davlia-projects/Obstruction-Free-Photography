@@ -94,6 +94,9 @@ int main() {
   memset(bgImg, 0, (N / 3) * sizeof(float));
   memset(fgImg, 0, (N / 3) * sizeof(float));
   memset(alpha, 0, (N / 3) * sizeof(float));
+  for (int i = 0; i < N/3; i++) {
+    fgImg[i] = bgImg[i] = grayscale[2][i];
+  }
   for (int j = 0; j < 4; j++) {
     memset(sparseMap, 0, (N / 3) * sizeof(bool));
     for (int i = 0; i < edgeFlowPairs[j].first.size(); i++) {
@@ -106,7 +109,7 @@ int main() {
     printf("Separating...\n");
     group1[j] = new bool[N / 3];
     group2[j] = new bool[N / 3];
-    separatePoints(width, height, group1[j], group2[j], sparseMap, pointDiffs, 45.0f, 30);
+    separatePoints(width, height, group1[j], group2[j], sparseMap, pointDiffs, 7.5f, 30);
 
     vector<pair<glm::ivec2, glm::ivec2>> fgPoints;
     vector<pair<glm::ivec2, glm::ivec2>> bgPoints;
@@ -154,17 +157,19 @@ int main() {
       // fgImg[idx] *= 0.25f;
       bgViz[idx] = (unsigned char) bgImg[idx];
       fgViz[idx] = (unsigned char) fgImg[idx];
-      bgImg[idx] *= SCALE_1_255;
-      fgImg[idx] *= SCALE_1_255;
-      if (fabs(bgImg[idx] - grayscale[2][idx]) < 35.0f) {
+      if (fabs(bgImg[idx] - grayscale[2][idx]) < 40.0f) {
         alpha[idx] = 1.0f;
         alphaViz[idx] = 255;
       } else {
         alpha[idx] = 0.0f;
         alphaViz[idx] = 0;
       }
+      bgImg[idx] *= SCALE_1_255;
+      fgImg[idx] *= SCALE_1_255;
     }
   }
+  Mat gs(Size(width, height), CV_8UC1, grayscale[2]);
+  imwrite("grayscale.jpg", gs);
   Mat mat(Size(width, height), CV_8UC1, bgViz);
   imwrite("bg_img.jpg", mat);
   Mat mat2(Size(width, height), CV_8UC1, fgViz);

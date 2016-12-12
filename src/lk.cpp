@@ -13,7 +13,7 @@ pair<vector<Point2f>, vector<Point2f>> lkEdgeFlow(int N, int width, int height, 
   }
   vector<uchar> status;
   vector<float> err;
-  calcOpticalFlowPyrLK(mat1, mat2, points[0], points[1], status, err, Size(11, 11));
+  calcOpticalFlowPyrLK(mat1, mat2, points[0], points[1], status, err, Size(31, 31));
   for (int i = 0; i < points[1].size(); i++) {
     if (status[i] == 0) continue;
     points[1][i] -= points[0][i];
