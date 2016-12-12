@@ -2,6 +2,8 @@
 #include "CImg.h"
 #include "canny.h"
 #include "flow.h"
+#include "gradient_descent.h"
+#include "interpolate.h"
 #include "lk.h"
 #include "kmeans.h"
 
@@ -51,18 +53,21 @@ void stride(int N, unsigned char * in, unsigned char * out) {
 }
 
 int main() {
+  const float SCALE_1_255 = (1.0f / 255.0f);
   CImg<unsigned char> images[5];
-  images[0] = CImg<unsigned char>("img/hanoi_input_1.png");
-  images[1] = CImg<unsigned char>("img/hanoi_input_2.png");
-  images[2] = CImg<unsigned char>("img/hanoi_input_3.png");
-  images[3] = CImg<unsigned char>("img/hanoi_input_4.png");
-  images[4] = CImg<unsigned char>("img/hanoi_input_5.png");
+  images[0] = CImg<unsigned char>("img/hanoi1.png");
+  images[1] = CImg<unsigned char>("img/hanoi2.png");
+  images[2] = CImg<unsigned char>("img/hanoi3.png");
+  images[3] = CImg<unsigned char>("img/hanoi4.png");
+  images[4] = CImg<unsigned char>("img/hanoi5.png");
 
   int width = images[0].width();
   int height = images[0].height();
   int N = width * height * 3;
   unsigned char * grayscale[5];
   unsigned char * in[5];
+  bool * group1[5];
+  bool * group2[5];
   unsigned char * gradient[3];
   pair<vector<Point2f>, vector<Point2f>> edgeFlowPairs[5];
   for (int i = 0; i < 5; i++) {
@@ -74,92 +79,161 @@ int main() {
   printf("Detecting edges...\n");
   gradient[0] = Canny::edge(N / 3, width, height, grayscale[2]);
   printf("Generating edge flow...\n");
-  edgeFlowPairs[0] = lkEdgeFlow(N / 3, width, height, gradient[0], grayscale[2], grayscale[3]);
+  edgeFlowPairs[0] = lkEdgeFlow(N / 3, width, height, gradient[0], grayscale[2], grayscale[0]);
   edgeFlowPairs[1] = lkEdgeFlow(N / 3, width, height, gradient[0], grayscale[2], grayscale[1]);
+  edgeFlowPairs[2] = lkEdgeFlow(N / 3, width, height, gradient[0], grayscale[2], grayscale[3]);
+  edgeFlowPairs[3] = lkEdgeFlow(N / 3, width, height, gradient[0], grayscale[2], grayscale[4]);
 
-  /*printf("Generating second edge flow...\n");
-  gradient[1] = new unsigned char[N / 3];
-  memset(gradient[1], 0, (N / 3) * sizeof(unsigned char));
-  gradient[2] = new unsigned char[N / 3];
-  memset(gradient[2], 0, (N / 3) * sizeof(unsigned char));
-  for (int i = 0; i < edgeFlowPairs[0].first.size(); i++) {
-    Point2f nidx = edgeFlowPairs[0].first[i] + edgeFlowPairs[0].second[i];
-    int nx = max(0, min(width - 1, (int)nidx.x));
-    int ny = max(0, min(height - 1, (int)nidx.y));
-    gradient[1][ny * width + nx] = 255;
-  }
-  for (int i = 0; i < edgeFlowPairs[1].first.size(); i++) {
-    Point2f nidx = edgeFlowPairs[1].first[i] + edgeFlowPairs[1].second[i];
-    int nx = max(0, min(width - 1, (int)nidx.x));
-    int ny = max(0, min(height - 1, (int)nidx.y));
-    gradient[2][ny * width + nx] = 255;
-  }
-  edgeFlowPairs[2] = lkEdgeFlow(N / 3, width, height, gradient[1], grayscale[3], grayscale[4]);
-  edgeFlowPairs[3] = lkEdgeFlow(N / 3, width, height, gradient[2], grayscale[1], grayscale[0]);*/
-
-  bool * group1 = new bool[N / 3];
-  bool * group2 = new bool[N / 3];
+  glm::ivec2 * pointDiffs = new glm::ivec2[N / 3];
   bool * sparseMap = new bool[N / 3];
-  vector<glm::ivec2> * pointDiffs = new vector<glm::ivec2>[N / 3];
-  memset(group1, 0, (N / 3) * sizeof(bool));
-  memset(group2, 0, (N / 3) * sizeof(bool));
-  memset(sparseMap, 0, (N / 3) * sizeof(bool));
-  for (int i = 0; i < edgeFlowPairs[0].first.size(); i++) {
-    Point2f & p = edgeFlowPairs[0].first[i];
-    int idx = (int)p.y * width + (int)p.x;
-    sparseMap[idx] = true;
-    for (int j = 0; j < 2; j++) {
+  pair<glm::ivec2, glm::ivec2> * denseBg[4];
+  pair<glm::ivec2, glm::ivec2> * denseFg[4];
+  float * bgImg = new float[N / 3];
+  float * fgImg = new float[N / 3];
+  float * alpha = new float[N / 3];
+  memset(bgImg, 0, (N / 3) * sizeof(float));
+  memset(fgImg, 0, (N / 3) * sizeof(float));
+  memset(alpha, 0, (N / 3) * sizeof(float));
+  for (int j = 0; j < 4; j++) {
+    memset(sparseMap, 0, (N / 3) * sizeof(bool));
+    for (int i = 0; i < edgeFlowPairs[j].first.size(); i++) {
+      Point2f & p = edgeFlowPairs[j].first[i];
+      int idx = (int)p.y * width + (int)p.x;
+      sparseMap[idx] = true;
       Point2f & q = edgeFlowPairs[j].second[i];
-      pointDiffs[idx].push_back(glm::ivec2(q.x, q.y));
+      pointDiffs[idx] = glm::ivec2(q.x, q.y);
+    }
+    printf("Separating...\n");
+    group1[j] = new bool[N / 3];
+    group2[j] = new bool[N / 3];
+    separatePoints(width, height, group1[j], group2[j], sparseMap, pointDiffs, 45.0f, 30);
+
+    vector<pair<glm::ivec2, glm::ivec2>> fgPoints;
+    vector<pair<glm::ivec2, glm::ivec2>> bgPoints;
+    fgPoints.clear();
+    bgPoints.clear();
+    for (int y = 0; y < height; y++) {
+      for (int x = 0; x < width; x++) {
+        int idx = y * width + x;
+        if (group1[j][idx]) {
+          bgPoints.push_back(make_pair(glm::ivec2(x, y), pointDiffs[idx]));
+        } else if (group2[j][idx]) {
+          fgPoints.push_back(make_pair(glm::ivec2(x, y), pointDiffs[idx]));
+        }
+      }
+    }
+    printf("Interpolating...\n");
+    denseBg[j] = interpolate(bgPoints.size(), width, height, bgPoints.data());
+    denseFg[j] = interpolate(fgPoints.size(), width, height, fgPoints.data());
+    for (int y = 0; y < height; y++) {
+      for (int x = 0; x < width; x++) {
+        int idx = y * width + x;
+        int nj = (j >= 2) ? j + 1 : j;
+        glm::ivec2 warpBg = glm::ivec2(x, y) + denseBg[j][idx].second;
+        warpBg.x = max(0, min(width - 1, warpBg.x));
+        warpBg.y = max(0, min(height - 1, warpBg.y));
+        // bgImg[idx] += grayscale[nj][warpBg.y * width + warpBg.x];
+        bgImg[idx] = max(bgImg[idx], (float)grayscale[nj][warpBg.y * width + warpBg.x]);
+        glm::ivec2 warpFg = glm::ivec2(x, y) + denseFg[j][idx].second;
+        warpFg.x = max(0, min(width - 1, warpFg.x));
+        warpFg.y = max(0, min(height - 1, warpFg.y));
+        // fgImg[idx] += grayscale[nj][warpFg.y * width + warpFg.x];
+        fgImg[idx] = min(fgImg[idx], (float)grayscale[nj][warpFg.y * width + warpFg.x]);
+      }
     }
   }
-  printf("Separating points...\n");
-  separatePoints(width, height, group1, group2, sparseMap, pointDiffs, 2, 1000.0f, 30);
 
-  unsigned char * flowViz = new unsigned char[N];
-  memset(flowViz, 0, N * sizeof(unsigned char));
+  unsigned char * bgViz = new unsigned char[N / 3];
+  unsigned char * bgDelta = new unsigned char[N / 3];
+  unsigned char * fgViz = new unsigned char[N / 3];
+  unsigned char * alphaViz = new unsigned char[N / 3];
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width; x++) {
       int idx = y * width + x;
-      if (group1[idx]) {
-        flowViz[3 * idx] = 255;
-      } else if (group2[idx]) {
-        flowViz[3 * idx + 1] = 255;
+      // bgImg[idx] *= 0.25f;
+      // fgImg[idx] *= 0.25f;
+      bgViz[idx] = (unsigned char) bgImg[idx];
+      fgViz[idx] = (unsigned char) fgImg[idx];
+      bgImg[idx] *= SCALE_1_255;
+      fgImg[idx] *= SCALE_1_255;
+      if (fabs(bgImg[idx] - grayscale[2][idx]) < 35.0f) {
+        alpha[idx] = 1.0f;
+        alphaViz[idx] = 255;
+      } else {
+        alpha[idx] = 0.0f;
+        alphaViz[idx] = 0;
       }
     }
   }
-  Mat mat(Size(width, height), CV_8UC3, flowViz);
-  imwrite("flow.jpg", mat);
+  Mat mat(Size(width, height), CV_8UC1, bgViz);
+  imwrite("bg_img.jpg", mat);
+  Mat mat2(Size(width, height), CV_8UC1, fgViz);
+  imwrite("fg_img.jpg", mat2);
+  Mat mat3(Size(width, height), CV_8UC1, alphaViz);
+  imwrite("alpha_img.jpg", mat3);
 
-  /*for (int y = 0; y < image1.height(); y++) {
-    for (int x = 0; x < image1.width(); x++) {
-      if (group1[y * image1.width() + x]) {
-        flowViz[3 * (y * image1.width() + x)] = 255;
-      } else if (group2[y * image1.width() + x]) {
-        flowViz[3 * (y * image1.width() + x) + 1] = 255;
+
+  unsigned char * flowViz = new unsigned char[N];
+  for (int i = 0; i < 4; i++) {
+    memset(flowViz, 0, N * sizeof(unsigned char));
+    for (int y = 0; y < height; y++) {
+      for (int x = 0; x < width; x++) {
+        int idx = y * width + x;
+        if (group1[i][idx]) {
+          flowViz[3 * idx] = 255;
+        } else if (group2[i][idx]) {
+          flowViz[3 * idx + 1] = 255;
+        }
+      }
+    }
+    Mat mat(Size(width, height), CV_8UC3, flowViz);
+    char str[40];
+    sprintf(str, "flow%d.jpg", i);
+    imwrite(str, mat);
+  }
+
+  int FRAMES = 5;
+  glm::vec2 * VB = new glm::vec2[(N / 3) * FRAMES];
+  glm::vec2 * VO = new glm::vec2[(N / 3) * FRAMES];
+  float * sequence = new float[(N / 3) * FRAMES];
+  for (int i = 0; i < FRAMES; i++) {
+    for (int y = 0; y < height; y++) {
+      for (int x = 0; x < width; x++) {
+        int idx = i * width * height + y * width + x;
+        int idx2 = y * width + x;
+        if (i == 0) {
+          VB[idx] = glm::vec2(0.0f, 0.0f);
+          VO[idx] = glm::vec2(0.0f, 0.0f);
+          sequence[idx] = (float)grayscale[2][idx2] * SCALE_1_255;
+        } else {
+          VB[idx] = glm::vec2(denseBg[i][idx2].second.x, denseBg[i][idx2].second.y);
+          VO[idx] = glm::vec2(denseFg[i][idx2].second.x, denseFg[i][idx2].second.y);
+          int ni = (i <= 2) ? i - 1 : i;
+          sequence[idx] = (float)grayscale[ni][idx2] * SCALE_1_255;
+        }
       }
     }
   }
-  Mat mat(Size(image1.width(), image1.height()), CV_8UC3, flowViz);
-  imwrite("flow.jpg", mat);*/
+  GradientDescent gd(width, height, 5, VB, VO, alpha, fgImg, bgImg, sequence);
+  gd.optimize();
+  for (int y = 0; y < height; y++) {
+    for (int x = 0; x < width; x++) {
+      int idx = y * width + x;
+      bgDelta[idx] = bgViz[idx] - (unsigned char) (bgImg[idx] * 255.0f);
+      bgViz[idx] = (unsigned char) (bgImg[idx] * 255.0f);
+      fgViz[idx] = (unsigned char) (fgImg[idx] * 255.0f);
+      alphaViz[idx] = (unsigned char) (alpha[idx] * 255.0f);
+    }
+  }
+  Mat fmat(Size(width, height), CV_8UC1, bgViz);
+  imwrite("bg_img2.jpg", fmat);
+  Mat fmat2(Size(width, height), CV_8UC1, fgViz);
+  imwrite("fg_img2.jpg", fmat2);
+  Mat fmat3(Size(width, height), CV_8UC1, alphaViz);
+  imwrite("alpha_img2.jpg", fmat3);
+  Mat fmat4(Size(width, height), CV_8UC1, bgDelta);
+  imwrite("bg_delta.jpg", fmat4);
 
-  /*stride(N, flowViz, out1);
->>>>>>> 54ef39688d222cdf76d2be20a2332f5d05a5752d
-  toIMG(out1, image1);
-  CImgDisplay main_disp1(image1,"Click a point");
-  while (!main_disp1.is_closed()) {
-    main_disp1.wait();
-  }*/
-  // stride(N, gradient1, out1);
-  // stride(N, gradient2, out2);
-  // toIMG(out1, image1);
-  // toIMG(out2, image2);
-  //
-  // CImgDisplay main_disp1(image1,"Click a point");
-  // CImgDisplay main_disp2(image2,"Click a point");
-  // while (!main_disp1.is_closed() && !main_disp2.is_closed()) {
-  //   main_disp1.wait();
-  //   main_disp2.wait();
-  // }
+
   return 0;
 }

@@ -63,13 +63,9 @@
   }
   return;
 }*/
-void separatePoints(int width, int height, bool * pointGroup1, bool * pointGroup2, bool * sparseMap, vector<glm::ivec2> * pointDiffs, int FRAMES, float THRESHOLD, float ITERATIONS) {
-  vector<glm::vec2> td;
-  vector<glm::vec2> sd;
-  for (int i = 0; i < FRAMES; i++) {
-    td.push_back(glm::ivec2(0.0f, 0.0f));
-    sd.push_back(glm::ivec2(0.0f, 0.0f));
-  }
+void separatePoints(int width, int height, bool * pointGroup1, bool * pointGroup2, bool * sparseMap, glm::ivec2 * pointDiffs, float THRESHOLD, float ITERATIONS) {
+  glm::vec2 td(0.0f, 0.0f);
+  glm::vec2 sd;
   float ct = 0.0f;
   int N = width * height;
 
@@ -79,23 +75,17 @@ void separatePoints(int width, int height, bool * pointGroup1, bool * pointGroup
       continue;
     }
     if (rand() % 2 == 0) {
-      for (int j = 0; j < FRAMES; j++) {
-        td[j] += pointDiffs[i][j];
-        ct += 1.0f;
-      }
+      td += pointDiffs[i];
+      ct += 1.0f;
     }
   }
-  for (int i = 0; i < FRAMES; i++) {
-    td[i] /= ct;
-  }
+  td /= ct;
 
   // Every iteration, take points within threshold of the guess and make that the new set
   for (int j = 0; j < ITERATIONS; j++) {
     // Blank stuff out
     memset(pointGroup1, 0, N * sizeof(bool));
-    for (int i = 0; i < FRAMES; i++) {
-      sd[i] = glm::vec2(0.0f, 0.0f);
-    }
+    sd = glm::vec2(0.0f, 0.0f);
     ct = 0.0f;
 
     // For each point, if the sum of squared differences is <= threshold, add to point group
@@ -103,22 +93,15 @@ void separatePoints(int width, int height, bool * pointGroup1, bool * pointGroup
       if (!sparseMap[i]) {
         continue;
       }
-      float delta = 0.0f;
-      for (int k = 0; k < FRAMES; k++) {
-        glm::vec2 d = td[k] - glm::vec2((float)pointDiffs[i][k].x, (float)pointDiffs[i][k].y);
-        delta += d.x * d.x + d.y * d.y;
-      }
+      glm::vec2 d = td - glm::vec2((float)pointDiffs[i].x, (float)pointDiffs[i].y);
+      float delta = d.x * d.x + d.y * d.y;
       if (delta <= THRESHOLD) {
         pointGroup1[i] = true;
-        for (int k = 0; k < FRAMES; k++) {
-          sd[k] += pointDiffs[i][k];
-        }
+        sd += pointDiffs[i];
         ct += 1.0f;
       }
     }
-    for (int k = 0; k < FRAMES; k++) {
-      td[k] = sd[k] / ct;
-    }
+    td = sd / ct;
   }
 
   // Take points not in first group, set to second group

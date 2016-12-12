@@ -1,5 +1,4 @@
 #include <cstring>
-#include <glm/vec2.hpp>
 #include <algorithm>
 #include <thrust/sort.h>
 #include "interpolate.h"
@@ -11,15 +10,15 @@ using namespace std;
 typedef pair<ivec2, ivec2> mot;
 
 void knnInterpolate(int N, int width, int height, mot * sparse, mot * dense) {
+  int * distance = new int[N];
   for (int i = 0; i < height; i++) {
     for (int j = 0; j < width; j++) {
-      int * distance = new int[N];
       for (int k = 0; k < N; k++) {
         int dx = sparse[k].first.x - j;
         int dy = sparse[k].first.y - i;
         distance[k] = dx * dx + dy * dy;
       }
-      thrust::sort(distance, distance + N, sparse);
+      thrust::sort_by_key(distance, distance + N, sparse);
       int totalDistance = 0;
       for (int k = 0; k < NEIGHBORS; k++) {
         totalDistance += distance[k];
@@ -36,6 +35,17 @@ void knnInterpolate(int N, int width, int height, mot * sparse, mot * dense) {
 }
 
 mot * interpolate(int N, int width, int height, mot * sparse) {
-  mot * dense = new mot[N];
-  knnInterpolate(N, width, height, sparse, dense);
+  mot * dense = new mot[width * height];
+  glm::vec2 sum = glm::vec2(0.0f, 0.0f);
+  for (int i = 0; i < N; i++) {
+    sum += sparse[i].second;
+  }
+  sum /= N;
+  for (int y = 0; y < height; y++) {
+    for (int x = 0; x < width; x++) {
+      dense[y * width + x] = make_pair(glm::ivec2(x, y), sum);
+    }
+  }
+  //knnInterpolate(N, width, height, sparse, dense);
+  return dense;
 }
