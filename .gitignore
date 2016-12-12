@@ -1,3 +1,4 @@
-*.o
+obj/*.o
+bin/main
 *.swp
 video/*

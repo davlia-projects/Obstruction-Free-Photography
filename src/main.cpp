@@ -51,42 +51,85 @@ void stride(int N, unsigned char * in, unsigned char * out) {
 }
 
 int main() {
-  CImg<unsigned char> image1("img/hanoi_input_1.png");
-  CImg<unsigned char> image2("img/hanoi_input_2.png");
+  CImg<unsigned char> images[5];
+  images[0] = CImg<unsigned char>("img/hanoi_input_1.png");
+  images[1] = CImg<unsigned char>("img/hanoi_input_2.png");
+  images[2] = CImg<unsigned char>("img/hanoi_input_3.png");
+  images[3] = CImg<unsigned char>("img/hanoi_input_4.png");
+  images[4] = CImg<unsigned char>("img/hanoi_input_5.png");
 
-  int N = image1.width() * image1.height() * 3;
-  unsigned char * out1 = new unsigned char[N];
-  unsigned char * out2 = new unsigned char[N];
-  unsigned char * g1 = new unsigned char[N / 3];
-  unsigned char * g2 = new unsigned char[N / 3];
+  int width = images[0].width();
+  int height = images[0].height();
+  int N = width * height * 3;
+  unsigned char * grayscale[5];
+  unsigned char * in[5];
+  unsigned char * gradient[3];
+  pair<vector<Point2f>, vector<Point2f>> edgeFlowPairs[5];
+  for (int i = 0; i < 5; i++) {
+    grayscale[i] = new unsigned char[N / 3];
+    in[i] = toRGB(images[i]);
+    kernGrayscale(N, in[i], grayscale[i]);
+  }
 
-  unsigned char * in1 = toRGB(image1);
-  unsigned char * in2 = toRGB(image2);
-  kernGrayscale(N, in1, g1);
-  kernGrayscale(N, in2, g2);
+  printf("Detecting edges...\n");
+  gradient[0] = Canny::edge(N / 3, width, height, grayscale[2]);
+  printf("Generating edge flow...\n");
+  edgeFlowPairs[0] = lkEdgeFlow(N / 3, width, height, gradient[0], grayscale[2], grayscale[3]);
+  edgeFlowPairs[1] = lkEdgeFlow(N / 3, width, height, gradient[0], grayscale[2], grayscale[1]);
 
-  unsigned char * gradient1 = Canny::edge(N / 3, image1.width(), image1.height(), g1);
-  unsigned char * gradient2 = Canny::edge(N / 3, image2.width(), image2.height(), g2);
+  /*printf("Generating second edge flow...\n");
+  gradient[1] = new unsigned char[N / 3];
+  memset(gradient[1], 0, (N / 3) * sizeof(unsigned char));
+  gradient[2] = new unsigned char[N / 3];
+  memset(gradient[2], 0, (N / 3) * sizeof(unsigned char));
+  for (int i = 0; i < edgeFlowPairs[0].first.size(); i++) {
+    Point2f nidx = edgeFlowPairs[0].first[i] + edgeFlowPairs[0].second[i];
+    int nx = max(0, min(width - 1, (int)nidx.x));
+    int ny = max(0, min(height - 1, (int)nidx.y));
+    gradient[1][ny * width + nx] = 255;
+  }
+  for (int i = 0; i < edgeFlowPairs[1].first.size(); i++) {
+    Point2f nidx = edgeFlowPairs[1].first[i] + edgeFlowPairs[1].second[i];
+    int nx = max(0, min(width - 1, (int)nidx.x));
+    int ny = max(0, min(height - 1, (int)nidx.y));
+    gradient[2][ny * width + nx] = 255;
+  }
+  edgeFlowPairs[2] = lkEdgeFlow(N / 3, width, height, gradient[1], grayscale[3], grayscale[4]);
+  edgeFlowPairs[3] = lkEdgeFlow(N / 3, width, height, gradient[2], grayscale[1], grayscale[0]);*/
 
-  //unsigned char * flow = Flow::edgeFlow(N / 3, image1.width(), image1.height(), gradient1, gradient2);
-  auto t = lkEdgeFlow(N / 3, image1.width(), image1.height(), gradient1, g1, g2);
-  unsigned char * flowViz = new unsigned char[N];
-  glm::ivec2 * flowPoints = new glm::ivec2[N / 3];
-  bool * sparseMap = new bool[N / 3];
   bool * group1 = new bool[N / 3];
   bool * group2 = new bool[N / 3];
+  bool * sparseMap = new bool[N / 3];
+  vector<glm::ivec2> * pointDiffs = new vector<glm::ivec2>[N / 3];
+  memset(group1, 0, (N / 3) * sizeof(bool));
+  memset(group2, 0, (N / 3) * sizeof(bool));
   memset(sparseMap, 0, (N / 3) * sizeof(bool));
-  memset(flowViz, 0, N * sizeof(unsigned char));
-  for (int i = 0; i < t.first.size(); i++) {
-    Point2f & p = t.first[i];
-    Point2f & d = t.second[i];
-    //flowViz[(int)p.y * image1.width() + (int)p.x] = sqrt(d.x * d.x + d.y * d.y);
-    sparseMap[(int)p.y * image1.width() + (int)p.x] = 1;
-    flowPoints[(int)p.y * image1.width() + (int)p.x] = glm::ivec2((int)t.second[i].x, (int)t.second[i].y);
+  for (int i = 0; i < edgeFlowPairs[0].first.size(); i++) {
+    Point2f & p = edgeFlowPairs[0].first[i];
+    int idx = (int)p.y * width + (int)p.x;
+    sparseMap[idx] = true;
+    for (int j = 0; j < 2; j++) {
+      Point2f & q = edgeFlowPairs[j].second[i];
+      pointDiffs[idx].push_back(glm::ivec2(q.x, q.y));
+    }
   }
-  separatePoints(image1.width(), image1.height(), group1, group2, sparseMap, flowPoints);
-  auto v1 = copyPoint(image1.width(), image1.height(), group1, flowPoints);
-  auto v2 = copyPoint(image1.width(), image1.height(), group2, flowPoints);
+  printf("Separating points...\n");
+  separatePoints(width, height, group1, group2, sparseMap, pointDiffs, 2, 1000.0f, 30);
+
+  unsigned char * flowViz = new unsigned char[N];
+  memset(flowViz, 0, N * sizeof(unsigned char));
+  for (int y = 0; y < height; y++) {
+    for (int x = 0; x < width; x++) {
+      int idx = y * width + x;
+      if (group1[idx]) {
+        flowViz[3 * idx] = 255;
+      } else if (group2[idx]) {
+        flowViz[3 * idx + 1] = 255;
+      }
+    }
+  }
+  Mat mat(Size(width, height), CV_8UC3, flowViz);
+  imwrite("flow.jpg", mat);
 
   /*for (int y = 0; y < image1.height(); y++) {
     for (int x = 0; x < image1.width(); x++) {

@@ -63,42 +63,76 @@
   }
   return;
 }*/
-void separatePoints(int width, int height, bool * pointGroup1, bool * pointGroup2, bool * sparseMap, glm::ivec2 * points) {
-  glm::vec2 t1 = glm::vec2(0.0f, 0.0f);
-  float ct1 = 0.0f;
-  int N = width * height;
-  for (int i = 0; i < N; i++) {
-    if (!sparseMap[i]) continue;
-    if (rand() % 2 == 0) {
-      t1 += points[i];
-      ct1 += 1.0f;
-    }
+void separatePoints(int width, int height, bool * pointGroup1, bool * pointGroup2, bool * sparseMap, vector<glm::ivec2> * pointDiffs, int FRAMES, float THRESHOLD, float ITERATIONS) {
+  vector<glm::vec2> td;
+  vector<glm::vec2> sd;
+  for (int i = 0; i < FRAMES; i++) {
+    td.push_back(glm::ivec2(0.0f, 0.0f));
+    sd.push_back(glm::ivec2(0.0f, 0.0f));
   }
-  t1 /= ct1;
-  const float THRESHOLD_1 = 450.0f;
-  const int ITERATIONS = 30;
-  for (int j = 0; j < ITERATIONS; j++) {
-    memset(pointGroup1, 0, N * sizeof(bool));
-    glm::vec2 s1 = glm::vec2(0.0f, 0.0f);
-    ct1 = 0.0f;
-    for (int i = 0; i < N; i++) {
-      if (!sparseMap[i]) continue;
-      glm::vec2 d = t1 - glm::vec2((float)points[i].x, (float)points[i].y);
-      if ((d.x * d.x + d.y * d.y) <= THRESHOLD_1) {
-        pointGroup1[i] = true;
-        s1 += points[i];
-        ct1 += 1.0f;
+  float ct = 0.0f;
+  int N = width * height;
+
+  // Initialize starting guess by randomly picking half the flows and taking their mean
+  for (int i = 0; i < N; i++) {
+    if (!sparseMap[i]) {
+      continue;
+    }
+    if (rand() % 2 == 0) {
+      for (int j = 0; j < FRAMES; j++) {
+        td[j] += pointDiffs[i][j];
+        ct += 1.0f;
       }
     }
-    t1 = s1 / ct1;
   }
+  for (int i = 0; i < FRAMES; i++) {
+    td[i] /= ct;
+  }
+
+  // Every iteration, take points within threshold of the guess and make that the new set
+  for (int j = 0; j < ITERATIONS; j++) {
+    // Blank stuff out
+    memset(pointGroup1, 0, N * sizeof(bool));
+    for (int i = 0; i < FRAMES; i++) {
+      sd[i] = glm::vec2(0.0f, 0.0f);
+    }
+    ct = 0.0f;
+
+    // For each point, if the sum of squared differences is <= threshold, add to point group
+    for (int i = 0; i < N; i++) {
+      if (!sparseMap[i]) {
+        continue;
+      }
+      float delta = 0.0f;
+      for (int k = 0; k < FRAMES; k++) {
+        glm::vec2 d = td[k] - glm::vec2((float)pointDiffs[i][k].x, (float)pointDiffs[i][k].y);
+        delta += d.x * d.x + d.y * d.y;
+      }
+      if (delta <= THRESHOLD) {
+        pointGroup1[i] = true;
+        for (int k = 0; k < FRAMES; k++) {
+          sd[k] += pointDiffs[i][k];
+        }
+        ct += 1.0f;
+      }
+    }
+    for (int k = 0; k < FRAMES; k++) {
+      td[k] = sd[k] / ct;
+    }
+  }
+
+  // Take points not in first group, set to second group
+  memset(pointGroup2, 0, N * sizeof(bool));
   for (int i = 0; i < N; i++) {
-    if (sparseMap[i] && !pointGroup1[i]) pointGroup2[i] = true;
+    if (sparseMap[i] && !pointGroup1[i]) {
+      pointGroup2[i] = true;
+    }
   }
+  return;
 }
 
-vector<pair<glm::ivec2, glm::ivec2>> copyPoints(int width, int height, bool * mask, glm::ivec2 * points) {
-  vector<pair<glm::Ivec2, glm::ivec2>> ret;
+/*vector<pair<glm::ivec2, glm::ivec2>> copyPoints(int width, int height, bool * mask, glm::ivec2 * points) {
+  vector<pair<glm::ivec2, glm::ivec2>> ret;
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width; x++) {
       if (mask[y * width + x]) {
@@ -107,4 +141,4 @@ vector<pair<glm::ivec2, glm::ivec2>> copyPoints(int width, int height, bool * ma
     }
   }
   return ret;
-}
+}*/
