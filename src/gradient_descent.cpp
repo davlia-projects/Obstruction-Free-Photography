@@ -22,12 +22,12 @@ GradientDescent::~GradientDescent() {
 
 void GradientDescent::optimize() {
   for (int i = 0; i < this->GD_ROUNDS; i++) {
-    for (int j = 0; j < this->IMG_ROUNDS; j++) {
-      this->optimizeImageComponents();
-      printf("OBJECTIVE: %f\n", this->objectiveFunction());
-    }
     for (int j = 0; j < this->MOTION_ROUNDS; j++) {
       this->optimizeMotionFields();
+      printf("OBJECTIVE: %f\n", this->objectiveFunction());
+    }
+    for (int j = 0; j < this->IMG_ROUNDS; j++) {
+      this->optimizeImageComponents();
       printf("OBJECTIVE: %f\n", this->objectiveFunction());
     }
   }
@@ -159,13 +159,13 @@ void GradientDescent::optimizeImageComponents() {
         alpha_gd[idx(x, y)] += this->LAMBDA_P * alpha[idx(x, y)];
       }
       if (imgO[idx(x, y)] > 1.0f) {
-        imgO_gd[idx(x, y)] += this->LAMBDA_P * (1.0f - imgO[idx(x, y)]);
+        imgO_gd[idx(x, y)] -= this->LAMBDA_P * (1.0f - imgO[idx(x, y)]);
       }
       if (imgB[idx(x, y)] > 1.0f) {
-        imgB_gd[idx(x, y)] += this->LAMBDA_P * (1.0f - imgB[idx(x, y)]);
+        imgB_gd[idx(x, y)] -= this->LAMBDA_P * (1.0f - imgB[idx(x, y)]);
       }
       if (alpha[idx(x, y)] > 1.0f) {
-        alpha_gd[idx(x, y)] += this->LAMBDA_P * (1.0f - alpha[idx(x, y)]);
+        alpha_gd[idx(x, y)] -= this->LAMBDA_P * (1.0f - alpha[idx(x, y)]);
       }
     }
   }

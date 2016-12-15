@@ -4,11 +4,11 @@
 
 class GradientDescent {
   private:
-    const int GD_ROUNDS = 5;
-    const int IMG_ROUNDS = 10;
+    const int GD_ROUNDS = 2;
+    const int IMG_ROUNDS = 20;
     const float LEARNING_RATE1 = 1e-6;
-    const int MOTION_ROUNDS = 10;
-    const float LEARNING_RATE2 = 1e4;
+    const int MOTION_ROUNDS = 20;
+    const float LEARNING_RATE2 = 1e1;
     float LAMBDA_DT = 1.0f;
     const float LAMBDA_1 = 1.0f;
     const float LAMBDA_2 = 0.1f;

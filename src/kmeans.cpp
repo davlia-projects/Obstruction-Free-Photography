@@ -70,13 +70,17 @@ void separatePoints(int width, int height, bool * pointGroup1, bool * pointGroup
   int N = width * height;
 
   // Initialize starting guess by randomly picking half the flows and taking their mean
-  for (int i = 0; i < N; i++) {
-    if (!sparseMap[i]) {
-      continue;
-    }
-    if (rand() % 2 == 0) {
-      td += pointDiffs[i];
-      ct += 1.0f;
+  for (int y = 0; y < height; y++) {
+    for (int x = 0; x < width; x++) {
+      if (x < 5 || y < 5 || x > width - 5 || y > height - 5) continue;
+      int i = y * width + x;
+      if (!sparseMap[i]) {
+        continue;
+      }
+      if (rand() % 2 == 0) {
+        td += pointDiffs[i];
+        ct += 1.0f;
+      }
     }
   }
   td /= ct;
@@ -89,16 +93,20 @@ void separatePoints(int width, int height, bool * pointGroup1, bool * pointGroup
     ct = 0.0f;
 
     // For each point, if the sum of squared differences is <= threshold, add to point group
-    for (int i = 0; i < N; i++) {
-      if (!sparseMap[i]) {
-        continue;
-      }
-      glm::vec2 d = td - glm::vec2((float)pointDiffs[i].x, (float)pointDiffs[i].y);
-      float delta = d.x * d.x + d.y * d.y;
-      if (delta <= THRESHOLD) {
-        pointGroup1[i] = true;
-        sd += pointDiffs[i];
-        ct += 1.0f;
+    for (int y = 0; y < height; y++) {
+      for (int x = 0; x < width; x++) {
+        if (x < 5 || y < 5 || x > width - 5 || y > height - 5) continue;
+        int i = y * width + x;
+        if (!sparseMap[i]) {
+          continue;
+        }
+        glm::vec2 d = td - glm::vec2((float)pointDiffs[i].x, (float)pointDiffs[i].y);
+        float delta = d.x * d.x + d.y * d.y;
+        if (delta <= THRESHOLD) {
+          pointGroup1[i] = true;
+          sd += pointDiffs[i];
+          ct += 1.0f;
+        }
       }
     }
     td = sd / ct;
@@ -106,9 +114,14 @@ void separatePoints(int width, int height, bool * pointGroup1, bool * pointGroup
 
   // Take points not in first group, set to second group
   memset(pointGroup2, 0, N * sizeof(bool));
-  for (int i = 0; i < N; i++) {
-    if (sparseMap[i] && !pointGroup1[i]) {
-      pointGroup2[i] = true;
+  for (int y = 0; y < height; y++) {
+    for (int x = 0; x < width; x++) {
+      int i = y * width + x;
+      if (x < 5 || y < 5 || x > width - 5 || y > height - 5) {
+        if (sparseMap[i]) pointGroup1[i] = true;
+      } else if (sparseMap[i] && !pointGroup1[i]) {
+        pointGroup2[i] = true;
+      }
     }
   }
   return;
