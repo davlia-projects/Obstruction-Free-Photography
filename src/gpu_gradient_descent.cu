@@ -1,13 +1,14 @@
 #include "gpu_gradient_descent.h"
+#include "timing.h"
 using namespace std;
 
 const int GD_ROUNDS = 100;
-const int IMG_ROUNDS = 200;
-const int MOTION_ROUNDS = 20;
-__device__ const float LEARNING_RATE1 = 1e-7;
-__device__ const float LEARNING_RATE2 = 1e-6;
+const int IMG_ROUNDS = 100;
+const int MOTION_ROUNDS = 100;
+__device__ const float LEARNING_RATE1 = 1e-4;
+__device__ const float LEARNING_RATE2 = 1e-4;
 __device__ const float LAMBDA_DT = 1.0f;
-__device__ const float LAMBDA_1 = 100.0f;
+__device__ const float LAMBDA_1 = 1.0f;
 __device__ const float LAMBDA_2 = 0.1f;
 __device__ const float LAMBDA_3 = 3000.0f;
 __device__ const float LAMBDA_4 = 0.5f;
@@ -26,9 +27,9 @@ float phi(float t) {
 
 __device__
 int warpIdx(int width, int height, int x, int y, int z, glm::vec2 warp) {
-  int nx = glm::clamp((int)(x + warp.x), 0, width - 1);
-  int ny = glm::clamp((int)(y + warp.y), 0, height - 1);
-  return z * width * height + ny * width + nx;
+  int nx = glm::clamp(x + (int)warp.x, 0, width - 1);
+  int ny = glm::clamp(y + (int)warp.y, 0, height - 1);
+  return ny * width + nx;
 }
 
 __device__
@@ -52,9 +53,9 @@ void kernImageGradientUpdate(int width, int height, ImgData imgData, GradData gr
   imgData.imgB[idx] -= LEARNING_RATE1 * gradData.imgB_grad[idx];
   imgData.alpha[idx] -= LEARNING_RATE1 * gradData.alpha_grad[idx];
 
-	imgData.imgO[idx] = glm::clamp(imgData.imgO[idx], -0.01f, 1.01f);
-	imgData.imgB[idx] = glm::clamp(imgData.imgB[idx], -0.01f, 1.01f);
-	imgData.alpha[idx] = glm::clamp(imgData.alpha[idx], -0.01f, 1.01f);
+	imgData.imgO[idx] = glm::clamp(imgData.imgO[idx], -1.0f, 2.0f);
+	imgData.imgB[idx] = glm::clamp(imgData.imgB[idx], -1.0f, 2.0f);
+	imgData.alpha[idx] = glm::clamp(imgData.alpha[idx], -1.0f, 2.0f);
   return;
 }
 
@@ -121,6 +122,7 @@ void kernComputeImageGradients2(int width, int height, ImgData imgData, GradData
   gradData.alpha_grad[idx] += g.y;
 	g = grad(imgData.alpha, x, y - 1, width, height);
   gradData.alpha_grad[idx] += g.y;
+	gradData.alpha_grad[idx] *= LAMBDA_1;
 
   g = grad(imgData.imgO, x + 1, y, width, height);
   gradData.imgO_grad[idx] -= LAMBDA_2 * imgWs.W2[index(x + 1, y, width, height)] * g.x;
@@ -227,6 +229,9 @@ void kernObjectiveDataTerm(int width, int height, int frames, ImgData imgData, f
   pixRet -= imgData.alpha[warpO_idx] * imgData.imgB[warpB_idx];
 
   objective[idx] = glm::abs(pixRet) * LAMBDA_DT;
+	if (objective[idx] != objective[idx]) {
+		objective[idx] = 0.0f;
+	}
   return;
 }
 
@@ -238,18 +243,22 @@ void kernObjectiveOtherTerms(int width, int height, ImgData imgData, float * obj
     return;
   }
   float ret = 0.0f;
+	int idx = y * width + x;
   glm::vec2 alpha_grad = grad(imgData.alpha, x, y, width, height);
   ret += LAMBDA_1 * (alpha_grad.x * alpha_grad.x + alpha_grad.y * alpha_grad.y);
   glm::vec2 imgO_grad = grad(imgData.imgO, x, y, width, height);
   ret += LAMBDA_2 * (glm::abs(imgO_grad.x) + glm::abs(imgO_grad.y));
   glm::vec2 imgB_grad = grad(imgData.imgB, x, y, width, height);
   ret += LAMBDA_2 * (glm::abs(imgB_grad.x) + glm::abs(imgB_grad.y));
-  ret += LAMBDA_3 
+  ret += LAMBDA_3
     * (imgO_grad.x * imgO_grad.x + imgO_grad.y * imgO_grad.y)
     * (imgB_grad.x * imgB_grad.x + imgB_grad.y * imgB_grad.y);
-  // TODO: too lazy to do sparsity constraint 
+  // TODO: too lazy to do sparsity constraint
 
-  objective[y * width + x] = ret;
+  objective[idx] = ret;
+	if (objective[idx] != objective[idx]) {
+		objective[idx] = 0.0f;
+	}
   return;
 }
 
@@ -264,7 +273,7 @@ GpuGradientDescent::GpuGradientDescent(int width, int height, int frames, glm::v
   cudaMemcpy(this->devVO, VO, N2 * sizeof(glm::vec2), cudaMemcpyHostToDevice);
   cudaMalloc(&this->devVB, N2 * sizeof(glm::vec2));
   cudaMemcpy(this->devVB, VB, N2 * sizeof(glm::vec2), cudaMemcpyHostToDevice);
-  cudaMalloc(&this->devSequence, N * sizeof(float));
+  cudaMalloc(&this->devSequence, N2 * sizeof(float));
   cudaMemcpy(this->devSequence, sequence, N2 * sizeof(float), cudaMemcpyHostToDevice);
   cudaMalloc(&this->devImgO, N * sizeof(float));
   cudaMemcpy(this->devImgO, imgO, N * sizeof(float), cudaMemcpyHostToDevice);
@@ -317,9 +326,12 @@ GpuGradientDescent::~GpuGradientDescent() {
   cudaFree(this->devW1);
   cudaFree(this->devW2);
   cudaFree(this->devW3);
+	cudaFree(this->devObjective1);
+	cudaFree(this->devObjective2);
 }
 
 void GpuGradientDescent::optimize() {
+	printf("OBJECTIVE: %f\n", this->objectiveFunction());
 	for (int i = 0; i < GD_ROUNDS; i++) {
 		for (int j = 0; j < MOTION_ROUNDS; j++) {
 			this->optimizeMotionFields();
@@ -327,9 +339,7 @@ void GpuGradientDescent::optimize() {
     for (int j = 0; j < IMG_ROUNDS; j++) {
       this->optimizeImageComponents();
     }
-		if (i % 100 == 0) {
-      printf("OBJECTIVE: %f\n", this->objectiveFunction());
-		}
+		if (i % 10 == 0) printf("OBJECTIVE: %f\n", this->objectiveFunction());
   }
 }
 
@@ -350,9 +360,9 @@ void GpuGradientDescent::optimizeImageComponents() {
     (this->height + blockSize3d.y - 1) / blockSize3d.y,
     (this->frames + blockSize3d.z - 1) / blockSize3d.z);
 
+
   kernComputeWTerms<<<blocksPerGrid3d, blockSize3d>>>(
       this->width, this->height, this->frames, this->imgData, this->imgWs);
-
   kernComputeImageGradients1<<<blocksPerGrid3d, blockSize3d>>>(
       this->width, this->height, this->frames, this->imgData, this->gradData, this->imgWs);
   kernComputeImageGradients2<<<blocksPerGrid2d, blockSize2d>>>(
@@ -377,11 +387,13 @@ void GpuGradientDescent::optimizeMotionFields() {
     (this->height + blockSize3d.y - 1) / blockSize3d.y,
     (this->frames + blockSize3d.z - 1) / blockSize3d.z);
 
+
 	kernComputeMotionGradients<<<blocksPerGrid3d, blockSize3d>>>(
 		this->width, this->height, this->frames, this->imgData, this->gradData);
 
 	kernMotionGradientUpdate<<<blocksPerGrid3d, blockSize3d>>>(
 		this->width, this->height, this->frames, this->imgData, this->gradData);
+
 }
 
 void GpuGradientDescent::getResults(ImgData * imgData) {
@@ -406,16 +418,21 @@ float GpuGradientDescent::objectiveFunction() {
     (this->width + blockSize3d.x - 1) / blockSize3d.x,
     (this->height + blockSize3d.y - 1) / blockSize3d.y,
     (this->frames + blockSize3d.z - 1) / blockSize3d.z);
-
-  kernObjectiveDataTerm<<<blocksPerGrid3d, blockSize3d>>>(
-      this->width, this->height, this->frames, this->imgData, this->devObjective1);
-  kernObjectiveOtherTerms<<<blocksPerGrid2d, blockSize2d>>>(
-      this->width, this->height, this->imgData, this->devObjective2);
-
   int N = this->width * this->height;
   int N2 = N * this->frames;
 
+
+  kernObjectiveDataTerm<<<blocksPerGrid3d, blockSize3d>>>(
+      this->width, this->height, this->frames, this->imgData, this->devObjective1);
+
+  kernObjectiveOtherTerms<<<blocksPerGrid2d, blockSize2d>>>(
+      this->width, this->height, this->imgData, this->devObjective2);
+
+
+	cudaDeviceSynchronize();
+
   ret += thrust::reduce(this->thrust_devObjective1, this->thrust_devObjective1 + N2, 0.0f);
+	printf("r: %f\n", ret);
   ret += thrust::reduce(this->thrust_devObjective2, this->thrust_devObjective2 + N, 0.0f);
   return ret;
 }

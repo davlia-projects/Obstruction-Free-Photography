@@ -22,6 +22,7 @@ class RansacSeparator {
     thrust::device_ptr<PointDelta> thrust_devPointDeltas;
   public:
 		int N;
+    void computeDiffs(PointDelta & tempDelta, glm::vec2 & meanVector, int THRESHOLD_N, int ITERATIONS, float SCALE_THRESHOLD_N);
     RansacSeparator(int N);
     ~RansacSeparator();
 

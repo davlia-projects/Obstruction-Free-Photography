@@ -1,6 +1,8 @@
+#include <time.h>
+#include "timing.h"
 #include "lk.h"
 
-pair<vector<Point2f>, vector<Point2f>> lkEdgeFlow(int N, int width, int height, unsigned char * grad, unsigned char * img1, unsigned char * img2) {
+pair<vector<Point2f>, vector<Point2f>> lucasKanade(int N, int width, int height, unsigned char * grad, unsigned char * img1, unsigned char * img2) {
   vector<Point2f> points[2];
   Mat mat1(Size(width, height), CV_8UC1, img1);
   Mat mat2(Size(width, height), CV_8UC1, img2);
@@ -19,4 +21,11 @@ pair<vector<Point2f>, vector<Point2f>> lkEdgeFlow(int N, int width, int height, 
     points[1][i] -= points[0][i];
   }
   return make_pair(points[0], points[1]);
+}
+
+pair<vector<Point2f>, vector<Point2f>> lkEdgeFlow(int N, int width, int height, unsigned char * grad, unsigned char * img1, unsigned char * img2) {
+  pair<vector<Point2f>, vector<Point2f>> tmp;
+  CPUTIMEINIT
+  CPUTIMEIT(tmp = lucasKanade(N, width, height, grad, img1, img2), "Lucas Kanade")
+  return tmp;
 }

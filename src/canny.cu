@@ -1,4 +1,5 @@
 #include "canny.h"
+#include "timing.h"
 #include <cstdio>
 #include <cmath>
 
@@ -144,7 +145,6 @@ __global__ void hysteresis(int N, int width, int height, unsigned char * in) {
   }
 }
 
-
 unsigned char * Canny::edge(int N, int width, int height, unsigned char * in) {
 	unsigned char * dev_in, * dev_gradient;
 
@@ -172,11 +172,16 @@ unsigned char * Canny::edge(int N, int width, int height, unsigned char * in) {
   		(width + blockSize2d.x - 1) / blockSize2d.x,
   		(height + blockSize2d.y - 1) / blockSize2d.y);
 
-  kernSmooth<<<blocksPerGrid2d, blockSize2d>>>(N, width, height, dev_in, smooth, blur_kernel, 5);
-  kernGradient<<<blocksPerGrid2d, blockSize2d>>>(N, width, height, smooth, dev_gradient, edgeDir, gradient_x, gradient_y);
-  nonMaxSuppression<<<blocksPerGrid2d, blockSize2d>>>(N, width, height, edgeDir, dev_gradient);
-  hysteresis<<<blocksPerGrid2d, blockSize2d>>>(N, width, height, dev_gradient); // can use stream compaction
-	cudaMemcpy(gradient, dev_gradient, N * sizeof(unsigned char), cudaMemcpyDeviceToHost);
+  TIMEINIT
+  TIMEIT((kernSmooth<<<blocksPerGrid2d, blockSize2d>>>(N, width, height, dev_in, smooth, blur_kernel, 5)), "Smoothing")
+  TIMEIT((kernGradient<<<blocksPerGrid2d, blockSize2d>>>(N, width, height, smooth, dev_gradient, edgeDir, gradient_x, gradient_y)), "Gradient")
+  TIMEIT((nonMaxSuppression<<<blocksPerGrid2d, blockSize2d>>>(N, width, height, edgeDir, dev_gradient)), "Non-maximum suppression")
+  TIMEIT((hysteresis<<<blocksPerGrid2d, blockSize2d>>>(N, width, height, dev_gradient)), "Hysteresis") // can use stream compaction
+  TIMEEND
+  
+
+  cudaMemcpy(gradient, dev_gradient, N * sizeof(unsigned char), cudaMemcpyDeviceToHost);
+
 
   cudaFree(smooth);
   cudaFree(edgeDir);

@@ -1,0 +1,148 @@
+
+Detecting edges...
+=============================================
+Smoothing Elapsed Time: 0.143648
+Gradient Elapsed Time: 0.064704
+Non-maximum suppression Elapsed Time: 0.045088
+Hysteresis Elapsed Time: 0.043168
+Total Elapsed Time: 0.296608
+
+Generating edge flow...
+=============================================
+Lucas Kanade Elapsed Time: 531711.000000
+Lucas Kanade Elapsed Time: 513748.000000
+Lucas Kanade Elapsed Time: 564995.000000
+Lucas Kanade Elapsed Time: 599118.000000
+
+Separating...
+=============================================
+Generating Deltas Elapsed Time: 0.016384
+threshold: 3625 out of 12085
+Computing Diffs Elapsed Time: 28.192863
+11.111173 0.000000, 31.138298 5.255556
+Set Point Group Elapsed Time: 0.008960
+Total Elapsed Time: 28.218208
+
+Drawing edge flow...
+=============================================
+
+Generating background/foreground
+=============================================
+Take Mean Elapsed Time: 0.021408
+Take Mean 1 Elapsed Time: 0.013184
+Take Mean 1 Elapsed Time: 0.015328
+Take Mean 1 Elapsed Time: 0.014176
+Take Mean 1 Elapsed Time: 0.015648
+Take Mean 1 Elapsed Time: 0.020192
+Take Mean 1 Elapsed Time: 0.015648
+Take Mean 1 Elapsed Time: 0.013472
+Take Mean 1 Elapsed Time: 0.015136
+Total Elapsed Time: 0.144192
+
+Separating...
+=============================================
+Generating Deltas Elapsed Time: 0.016512
+threshold: 3625 out of 12085
+Computing Diffs Elapsed Time: 27.548128
+5.448828 0.000000, 20.182978 4.177896
+Set Point Group Elapsed Time: 0.011392
+Total Elapsed Time: 27.576033
+
+Generating background/foreground
+=============================================
+Take Mean Elapsed Time: 0.020928
+Take Mean 1 Elapsed Time: 0.020384
+Take Mean 1 Elapsed Time: 0.016448
+Take Mean 1 Elapsed Time: 0.013792
+Take Mean 1 Elapsed Time: 0.015712
+Take Mean 1 Elapsed Time: 0.020544
+Take Mean 1 Elapsed Time: 0.015648
+Take Mean 1 Elapsed Time: 0.013312
+Take Mean 1 Elapsed Time: 0.016096
+Total Elapsed Time: 0.152864
+
+Separating...
+=============================================
+Generating Deltas Elapsed Time: 0.016000
+threshold: 3625 out of 12085
+Computing Diffs Elapsed Time: 27.568352
+-6.000000 0.000000, -5.486643 0.456028
+Set Point Group Elapsed Time: 0.011744
+Total Elapsed Time: 27.596096
+
+Generating background/foreground
+=============================================
+Take Mean Elapsed Time: 0.021120
+Take Mean 1 Elapsed Time: 0.012768
+Take Mean 1 Elapsed Time: 0.016000
+Take Mean 1 Elapsed Time: 0.013824
+Take Mean 1 Elapsed Time: 0.016192
+Take Mean 1 Elapsed Time: 0.013824
+Take Mean 1 Elapsed Time: 0.016160
+Take Mean 1 Elapsed Time: 0.013888
+Take Mean 1 Elapsed Time: 0.016160
+Total Elapsed Time: 0.139936
+
+Separating...
+=============================================
+Generating Deltas Elapsed Time: 0.016032
+threshold: 3625 out of 12085
+Computing Diffs Elapsed Time: 27.633408
+-12.000001 0.000000, -9.746218 5.482979
+Set Point Group Elapsed Time: 0.011552
+Total Elapsed Time: 27.660992
+
+Generating background/foreground
+=============================================
+Take Mean Elapsed Time: 0.022400
+Take Mean 1 Elapsed Time: 0.013056
+Take Mean 1 Elapsed Time: 0.016192
+Take Mean 1 Elapsed Time: 0.013664
+Take Mean 1 Elapsed Time: 0.015840
+Take Mean 1 Elapsed Time: 0.013664
+Take Mean 1 Elapsed Time: 0.015744
+Take Mean 1 Elapsed Time: 0.013664
+Take Mean 1 Elapsed Time: 0.016128
+Total Elapsed Time: 0.140352
+
+Spatial coherence...
+=============================================
+Spatial Coherence Elapsed Time: 0.390368
+Spatial Coherence Elapsed Time: 0.401376
+Spatial Coherence Elapsed Time: 0.398464
+Spatial Coherence Elapsed Time: 0.400256
+Spatial Coherence Elapsed Time: 0.401824
+Spatial Coherence Elapsed Time: 0.400992
+Spatial Coherence Elapsed Time: 0.400736
+Spatial Coherence Elapsed Time: 0.395136
+Spatial Coherence Elapsed Time: 0.401696
+Spatial Coherence Elapsed Time: 0.399648
+Total Elapsed Time: 3.990496
+
+Setting up gradient descent...
+=============================================
+
+Optimizing...
+=============================================
+r: 125343.226562
+OBJECTIVE: 213200.140625
+r: 306772.750000
+OBJECTIVE: 21047438.000000
+r: 306636.906250
+OBJECTIVE: 15768050.000000
+r: 306592.156250
+OBJECTIVE: 12645067.000000
+r: 306288.156250
+OBJECTIVE: 10932071.000000
+r: 306029.468750
+OBJECTIVE: 9009539.000000
+r: 307452.187500
+OBJECTIVE: 8157434.500000
+r: 306560.468750
+OBJECTIVE: 7389638.500000
+r: 306023.500000
+OBJECTIVE: 6839414.500000
+r: 307883.625000
+OBJECTIVE: 6500585.500000
+r: 305667.781250
+OBJECTIVE: 5903886.000000

@@ -1,4 +1,5 @@
-#include "canny.h"
+#include "canny_cpu.h"
+#include "timing.h"
 #include <cstdio>
 #include <cmath>
 
@@ -143,14 +144,15 @@ void hysteresis(int N, int width, int height, unsigned char * in) {
 
 
 unsigned char * Canny::edge(int N, int width, int height, unsigned char * in) {
+	CPUTIMEINIT
   unsigned char * smooth = new unsigned char[N];
   unsigned char * gradient = new unsigned char[N];
   unsigned char * edgeDir = new unsigned char[N];
 
-  Canny::kernSmooth(N, width, height, in, smooth, gaussian, 5);
-  kernGradient(N, width, height, smooth, gradient, edgeDir);
-  nonMaxSuppression(N, width, height, edgeDir, gradient);
-  hysteresis(N, width, height, gradient); // can use stream compaction
+  CPUTIMEIT(Canny::kernSmooth(N, width, height, in, smooth, gaussian, 5), "kernSmooth");
+  CPUTIMEIT(kernGradient(N, width, height, smooth, gradient, edgeDir), "kernGradient");
+  CPUTIMEIT(nonMaxSuppression(N, width, height, edgeDir, gradient), "nonmax");
+  CPUTIMEIT(hysteresis(N, width, height, gradient), "hysteresis"); // can use stream compaction
 
   delete[] smooth, gradient, edgeDir;
 

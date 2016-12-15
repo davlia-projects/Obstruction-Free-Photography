@@ -1,5 +1,6 @@
 #include "gradient_descent.h"
 #include <bits/stdc++.h>
+#include "timing.h"
 using namespace std;
 
 GradientDescent::GradientDescent(int width, int height, int frames, glm::vec2 * VB, glm::vec2 * VO, float * alpha, float * imgO, float * imgB, float * sequence) {
@@ -21,14 +22,16 @@ GradientDescent::~GradientDescent() {
 }
 
 void GradientDescent::optimize() {
+CPUTIMEINIT;
   for (int i = 0; i < this->GD_ROUNDS; i++) {
+		CPUTIMEIT(this->objectiveFunction(), "objectiveFunction");
     for (int j = 0; j < this->MOTION_ROUNDS; j++) {
-      this->optimizeMotionFields();
-      printf("OBJECTIVE: %f\n", this->objectiveFunction());
+      CPUTIMEIT(this->optimizeMotionFields(), "optimizeMotionFields");
+      // printf("OBJECTIVE: %f\n", this->objectiveFunction());
     }
     for (int j = 0; j < this->IMG_ROUNDS; j++) {
-      this->optimizeImageComponents();
-      printf("OBJECTIVE: %f\n", this->objectiveFunction());
+      CPUTIMEIT(this->optimizeImageComponents(), "optimizeImageComponents");
+      // printf("OBJECTIVE: %f\n", this->objectiveFunction());
     }
   }
 }
@@ -61,7 +64,7 @@ void GradientDescent::freeBuffers() {
   return;
 }
 
-float phi(float t) {
+static float phi(float t) {
   const float EPSILON_SQ = 1e-2;
   return sqrt(t * t + EPSILON_SQ);
 }

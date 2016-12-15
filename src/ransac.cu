@@ -1,5 +1,5 @@
 #include "ransac.h"
-  
+#include "timing.h"
 const int BLOCK_SIZE = 128;
 static dim3 blocksPerGrid;
 
@@ -67,10 +67,22 @@ RansacSeparator::~RansacSeparator() {
   cudaFree(this->devPointGroup);
 }
 
+void RansacSeparator::computeDiffs(PointDelta & tempDelta, glm::vec2 & meanVector, int THRESHOLD_N, int ITERATIONS, float SCALE_THRESHOLD_N) {
+  for (int i = 0; i < ITERATIONS; i++) {
+    kernComputeDiffs<<<blocksPerGrid, BLOCK_SIZE>>>(this->N, meanVector, this->devPointDeltas);
+    cudaDeviceSynchronize();
+    thrust::sort(this->thrust_devPointDeltas, this->thrust_devPointDeltas + this->N, SortByDist());
+    tempDelta.delta = glm::vec2(0.0f, 0.0f);
+    tempDelta = thrust::reduce(this->thrust_devPointDeltas, this->thrust_devPointDeltas + THRESHOLD_N, tempDelta, AddDelta());
+    meanVector = tempDelta.delta * SCALE_THRESHOLD_N;
+  }
+}
+
 pair<glm::vec2,glm::vec2> RansacSeparator::separate(bool * pointGroup, glm::vec2 * pointDiffs, float THRESHOLD, int ITERATIONS) {
   cudaMemcpy(this->devPointDiffs, pointDiffs, this->N * sizeof(glm::vec2), cudaMemcpyHostToDevice);
 	cudaDeviceSynchronize();
-  kernGeneratePointDeltas<<<blocksPerGrid, BLOCK_SIZE>>>(this->N, this->devPointDiffs, this->devPointDeltas);
+  TIMEINIT
+  TIMEIT((kernGeneratePointDeltas<<<blocksPerGrid, BLOCK_SIZE>>>(this->N, this->devPointDiffs, this->devPointDeltas)), "Generating Deltas")
 	cudaDeviceSynchronize();
 
   int THRESHOLD_N = THRESHOLD * (float)this->N;
@@ -80,20 +92,15 @@ pair<glm::vec2,glm::vec2> RansacSeparator::separate(bool * pointGroup, glm::vec2
 
 	PointDelta tempDelta;
   glm::vec2 meanVector(0.0f, 0.0f);
-  for (int i = 0; i < ITERATIONS; i++) {
-    kernComputeDiffs<<<blocksPerGrid, BLOCK_SIZE>>>(this->N, meanVector, this->devPointDeltas);
-		cudaDeviceSynchronize();
-    thrust::sort(this->thrust_devPointDeltas, this->thrust_devPointDeltas + this->N, SortByDist());
-    tempDelta.delta = glm::vec2(0.0f, 0.0f);
-    tempDelta = thrust::reduce(this->thrust_devPointDeltas, this->thrust_devPointDeltas + THRESHOLD_N, tempDelta, AddDelta());
-    meanVector = tempDelta.delta * SCALE_THRESHOLD_N;
-  }
+  TIMEIT(computeDiffs(tempDelta, meanVector, THRESHOLD_N, ITERATIONS, SCALE_THRESHOLD_N), "Computing Diffs")
 	tempDelta.delta = glm::vec2(0.0f, 0.0f);
 	tempDelta = thrust::reduce(this->thrust_devPointDeltas + THRESHOLD_N, this->thrust_devPointDeltas + this->N, tempDelta, AddDelta());
 	tempDelta.delta *= SCALE_REMAINDER;
 	printf("%f %f, %f %f\n", meanVector.x, meanVector.y, tempDelta.delta.x, tempDelta.delta.y);
 
-	kernSetPointGroup<<<blocksPerGrid, BLOCK_SIZE>>>(THRESHOLD_N, this->devPointDeltas, this->devPointGroup);
+	cudaMemset(this->devPointGroup, 0, this->N * sizeof(bool));
+  TIMEIT((kernSetPointGroup<<<blocksPerGrid, BLOCK_SIZE>>>(THRESHOLD_N, this->devPointDeltas, this->devPointGroup)), "Set Point Group")
+  TIMEEND
 	cudaDeviceSynchronize();
   cudaMemcpy(pointGroup, this->devPointGroup, this->N * sizeof(bool), cudaMemcpyDeviceToHost);
 	cudaDeviceSynchronize();

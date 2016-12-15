@@ -1,0 +1,142 @@
+
+Detecting edges...
+=============================================
+Smoothing Elapsed Time: 0.135648
+Gradient Elapsed Time: 0.064832
+Non-maximum suppression Elapsed Time: 0.045216
+Hysteresis Elapsed Time: 0.044288
+Total Elapsed Time: 0.044288
+
+Generating edge flow...
+=============================================
+Lucas Kanade Elapsed Time: 526923.000000
+Lucas Kanade Elapsed Time: 519608.000000
+Lucas Kanade Elapsed Time: 563142.000000
+Lucas Kanade Elapsed Time: 596784.000000
+
+Separating...
+=============================================
+Generating Deltas Elapsed Time: 0.014144
+threshold: 3628 out of 12096
+Computing Diffs Elapsed Time: 28.083872
+11.110530 0.000000, 31.153164 5.259801
+Set Point Group Elapsed Time: 0.014976
+Total Elapsed Time: 0.014976
+
+Interpolating...
+=============================================
+
+Generating background/foreground
+=============================================
+
+Drawing edge flow...
+=============================================
+
+Separating...
+=============================================
+Generating Deltas Elapsed Time: 0.022336
+threshold: 3628 out of 12096
+Computing Diffs Elapsed Time: 28.057280
+5.449008 0.000000, 20.172886 4.175838
+Set Point Group Elapsed Time: 0.014240
+Total Elapsed Time: 0.014240
+
+Interpolating...
+=============================================
+
+Generating background/foreground
+=============================================
+
+Separating...
+=============================================
+Generating Deltas Elapsed Time: 0.026848
+threshold: 3628 out of 12096
+Computing Diffs Elapsed Time: 27.696640
+-6.000000 0.000000, -5.490316 0.450638
+Set Point Group Elapsed Time: 0.015616
+Total Elapsed Time: 0.015616
+
+Interpolating...
+=============================================
+
+Generating background/foreground
+=============================================
+
+Separating...
+=============================================
+Generating Deltas Elapsed Time: 0.018976
+threshold: 3628 out of 12096
+Computing Diffs Elapsed Time: 27.457056
+-12.000000 0.000000, -9.750000 5.489254
+Set Point Group Elapsed Time: 0.015808
+Total Elapsed Time: 0.015808
+
+Interpolating...
+=============================================
+
+Generating background/foreground
+=============================================
+
+Spatial coherence...
+=============================================
+
+Setting up gradient descent...
+=============================================
+
+Optimizing...
+=============================================
+Objective Data Term Elapsed Time: 0.125760
+Objective Other Terms Elapsed Time: 0.033536
+Total Elapsed Time: 0.033536
+r: 118801.421875
+OBJECTIVE: 208507.046875
+Objective Data Term Elapsed Time: 0.124576
+Objective Other Terms Elapsed Time: 0.046592
+Total Elapsed Time: 0.046592
+r: 307865.000000
+OBJECTIVE: 20246132.000000
+Objective Data Term Elapsed Time: 0.124896
+Objective Other Terms Elapsed Time: 0.057152
+Total Elapsed Time: 0.057152
+r: 306154.562500
+OBJECTIVE: 14162607.000000
+Objective Data Term Elapsed Time: 0.126112
+Objective Other Terms Elapsed Time: 0.056224
+Total Elapsed Time: 0.056224
+r: 307084.656250
+OBJECTIVE: 11827818.000000
+Objective Data Term Elapsed Time: 0.126176
+Objective Other Terms Elapsed Time: 0.056032
+Total Elapsed Time: 0.056032
+r: 305560.156250
+OBJECTIVE: 10477114.000000
+Objective Data Term Elapsed Time: 0.125056
+Objective Other Terms Elapsed Time: 0.055232
+Total Elapsed Time: 0.055232
+r: 305603.937500
+OBJECTIVE: 8887951.000000
+Objective Data Term Elapsed Time: 0.124864
+Objective Other Terms Elapsed Time: 0.055872
+Total Elapsed Time: 0.055872
+r: 305841.156250
+OBJECTIVE: 8351422.500000
+Objective Data Term Elapsed Time: 0.125728
+Objective Other Terms Elapsed Time: 0.055040
+Total Elapsed Time: 0.055040
+r: 306670.750000
+OBJECTIVE: 7463368.000000
+Objective Data Term Elapsed Time: 0.126208
+Objective Other Terms Elapsed Time: 0.054848
+Total Elapsed Time: 0.054848
+r: 305575.125000
+OBJECTIVE: 6871545.500000
+Objective Data Term Elapsed Time: 0.126464
+Objective Other Terms Elapsed Time: 0.054848
+Total Elapsed Time: 0.054848
+r: 305120.406250
+OBJECTIVE: 6695811.000000
+Objective Data Term Elapsed Time: 0.124864
+Objective Other Terms Elapsed Time: 0.053376
+Total Elapsed Time: 0.053376
+r: 306716.312500
+OBJECTIVE: 6197278.000000

@@ -3,14 +3,9 @@
 #include "canny.h"
 #include "flow.h"
 #include "gpu_gradient_descent.h"
-#include "gradient_descent.h"
-#include "generate_bgfg.h"
 #include "interpolate.h"
 #include "lk.h"
-#include "kmeans.h"
 #include "ransac.h"
-#include "spatial_coherence.h"
-#include "timing.h"
 
 using namespace cimg_library;
 using namespace std;
@@ -66,7 +61,6 @@ const float gaussian[5 * 5] = {
 };
 
 int main() {
-	CPUTIMEINIT;
   const float SCALE_1_255 = (1.0f / 255.0f);
   CImg<unsigned char> images[5];
   images[0] = CImg<unsigned char>("img/hanoi1.png");
@@ -119,9 +113,9 @@ int main() {
   // glm::ivec2 * pointDiffs = new glm::ivec2[N / 3];
   // glm::ivec2 * actualPointDiffs = new glm::ivec2[N / 3];
   bool * sparseMap = new bool[N / 3];
-  pair<glm::ivec2, glm::ivec2> * denseBg[4];
-  pair<glm::ivec2, glm::ivec2> * denseFg[4];
-  float * bgPixels = new float[5 * (N / 3)];
+  //pair<glm::ivec2, glm::ivec2> * denseBg[4];
+  //pair<glm::ivec2, glm::ivec2> * denseFg[4];
+  vector<float> * bgPixels = new vector<float>[N / 3];
   float * bgImg = new float[N / 3];
   float * fgImg = new float[N / 3];
   float * alpha = new float[N / 3];
@@ -136,7 +130,6 @@ int main() {
 
 	int SPARSE_SIZE = edgeFlowPairs[0].first.size();
 	glm::vec2 * pointDiffs = new glm::vec2[SPARSE_SIZE];
-	glm::ivec2 * cpuPointDiffs = new glm::ivec2[N/3];
 	bool * pointGroup = new bool[SPARSE_SIZE];
 	RansacSeparator * ransacSeparator = new RansacSeparator(SPARSE_SIZE);
 	pair<glm::vec2,glm::vec2> groupVectors[4];
@@ -151,7 +144,6 @@ int main() {
       // int nj = (j >= 2) ? j + 1: j;
       // int tc = grayscale[nj][int(p.y + q.y) * width + int(p.x + q.x)];
 			pointDiffs[i] = glm::ivec2(q.x, q.y);
-			cpuPointDiffs[i] = glm::ivec2(q.x, q.y);
       // pointDiffs[idx] = glm::ivec2(tc, tc);
       // actualPointDiffs[idx] = glm::ivec2(q.x, q.y);
     }
@@ -160,7 +152,6 @@ int main() {
     group2[j] = new bool[N / 3];
 		memset(group1[j], 0, (N / 3) * sizeof(bool));
 		memset(group2[j], 0, (N / 3) * sizeof(bool));
-		CPUTIMEIT(separatePoints(width, height, group1[j], group2[j], sparseMap, cpuPointDiffs, 2000.0f, 50), "CPU_sep");
 		groupVectors[j] = ransacSeparator->separate(pointGroup, pointDiffs, 0.3f, 50);
 		for (int i = 0; i < SPARSE_SIZE; i++) {
 			int idx = edgeFlowPairs[j].first[i].y * width + edgeFlowPairs[j].first[i].x;
@@ -170,7 +161,11 @@ int main() {
 				group2[j][idx] = true;
 			}
 		}
-		
+    /*if (j == 0 || j == 3) {
+      separatePoints(width, height, group1[j], group2[j], sparseMap, pointDiffs, 2000.0f, 30);
+    } else {
+      separatePoints(width, height, group1[j], group2[j], sparseMap, pointDiffs, 2000.0f, 30);
+    }*/
 
     /*vector<pair<glm::ivec2, glm::ivec2>> fgPoints;
     vector<pair<glm::ivec2, glm::ivec2>> bgPoints;
@@ -193,28 +188,26 @@ int main() {
     }*/
     // denseBg[j] = interpolate(bgPoints.size(), width, height, bgPoints.data());
     // denseFg[j] = interpolate(fgPoints.size(), width, height, fgPoints.data());
-		/*printf("\nGenerating background/foreground\n=============================================\n");
-		start = clock();
-    for (int y = 0; y < height; y++) {
+		printf("\nGenerating background/foreground\n=============================================\n");
+    /*for (int y = 0; y < height; y++) {
       for (int x = 0; x < width; x++) {
         int idx = y * width + x;
         int nj = (j >= 2) ? j + 1 : j;
-        glm::ivec2 warpBg = glm::ivec2(x, y) + glm::ivec2(groupVectors[j].first.x, groupVectors[j].first.y);
+        glm::ivec2 warpBg = glm::ivec2(x, y) + glm::ivec2(groupVectors[j][0].x, groupVectors[j][0].y);
         warpBg.x = max(0, min(width - 1, warpBg.x));
         warpBg.y = max(0, min(height - 1, warpBg.y));
         bgImg[idx] += grayscale[nj][warpBg.y * width + warpBg.x] * 0.20f;
         // bgImg[idx] = max(bgImg[idx], (float)grayscale[nj][warpBg.y * width + warpBg.x]);
         // bgImg[idx] = min(bgImg[idx], (float)grayscale[nj][warpBg.y * width + warpBg.x]);
-        bgPixels[5 * idx + nj] = grayscale[nj][warpBg.y * width + warpBg.x];
-        glm::ivec2 warpFg = glm::ivec2(x, y) + glm::ivec2(groupVectors[j].second.x, groupVectors[j].second.y);
+        bgPixels[idx].push_back(grayscale[nj][warpBg.y * width + warpBg.x]);
+        glm::ivec2 warpFg = glm::ivec2(x, y) + glm::ivec2(groupVectors[j][1].x, groupVectors[j][1].y);
         warpFg.x = max(0, min(width - 1, warpFg.x));
         warpFg.y = max(0, min(height - 1, warpFg.y));
         fgImg[idx] += grayscale[nj][warpFg.y * width + warpFg.x] * 0.20f;
         // fgImg[idx] = min(fgImg[idx], (float)grayscale[nj][warpFg.y * width + warpFg.x]);
       }
-    }
-		end = clock() - start;
-		printf("%s Elapsed Time: %f\n", "CPU generate_bgfg", float(end)/1000.0f);*/
+    }*/
+		generateBgFg(width, height, 4, j, bgImg, fgImg, groupVectors[0], groupVectors[1], bgPixels);
     if (j == 0) {
 			printf("\nDrawing edge flow...\n=============================================\n");
       memset(lkViz, 0, (N / 3) * sizeof(unsigned char));
@@ -231,8 +224,6 @@ int main() {
       Mat flowmat(Size(width, height), CV_8UC1, lkViz);
       imwrite("edgeflow.jpg", flowmat);
     }
-		printf("\nGenerating background/foreground\n=============================================\n");
-		generateBgFg(width, height, 4, bgImg, fgImg, grayscale, groupVectors, bgPixels);
 
 		/*printf("Drawing warp...\n");
     memset(lkViz, 0, (N / 3) * sizeof(unsigned char));
@@ -254,48 +245,42 @@ int main() {
 
 	// Spatial coherence
 	printf("\nSpatial coherence...\n=============================================\n");
-	/*start = clock();
-	for (int i = 0; i < 10; i++) {
+  for (int y = 0; y < height; y++) {
+    for (int x = 0; x < width; x++) {
+      int idx = y * width + x;
+      sort(bgPixels[idx].begin(), bgPixels[idx].end());
+      bgImg[idx] = bgPixels[idx][2];
+    }
+  }
+
+  for (int i = 0; i < 10; i++) {
     for (int y = 0; y < height; y++) {
       for (int x = 0; x < width; x++) {
         int idx = y * width + x;
         float mn = 100000000000.0f;
         int mj = 0;
-        for (int j = 0; j < 5; j++) {
+        for (int j = 0; j < 4; j++) {
           float d = 0.0f;
           for (int dy = -3; dy <= 3; dy++) {
             for (int dx = -3; dx <= 3; dx++) {
               int nx = max(0, min(width - 1, x + dx));
               int ny = max(0, min(height - 1, y + dy));
-              float pd = bgImg[ny * width + nx] - bgPixels[5 * idx + j];
+              float pd = bgImg[ny * width + nx] - bgPixels[idx][j];
               d += fabs(pd);
             }
           }
-          float sd = bgPixels[5 * idx + j] - (float)grayscale[2][idx];
+          float sd = bgPixels[idx][j] - (float)grayscale[2][idx];
           d += fabs(sd) * 25.0f;
           if (d < mn) {
             mn = d;
             mj = j;
           }
         }
-        bgImg[idx] = bgPixels[5 * idx + mj];
+        bgImg[idx] = bgPixels[idx][mj];
         // bgImg[idx] = 0.333f * (bgPixels[idx][1] + bgPixels[idx][2] + bgPixels[idx][3]
       }
     }
   }
-  for (int y = 0; y < height; y++) {
-    for (int x = 0; x < width; x++) {
-      int idx = y * width + x;
-      sort(bgPixels + (5 * idx), bgPixels + (5 * idx + 5));
-      bgImg[idx] = bgPixels[5 * idx + 2];
-    }
-  }
-	end = clock() - start;
-	printf("%s Elapsed Time: %f\n", "cpu spatial coherence", float(end)/1000.0f);*/
-
-	spatialCoherence(width, height, 5, bgImg, grayscale[2], bgPixels);
-
-  
 
   unsigned char * bgViz = new unsigned char[N / 3];
   unsigned char * bgDelta = new unsigned char[N / 3];
@@ -368,11 +353,9 @@ int main() {
           VO[idx] = glm::vec2(0.0f, 0.0f);
           sequence[idx] = (float)grayscale[2][idx2] * SCALE_1_255;
         } else {
-          // VB[idx] = glm::vec2(denseBg[i - 1][idx2].second.x, denseBg[i - 1][idx2].second.y);
-          // VO[idx] = glm::vec2(denseFg[i - 1][idx2].second.x, denseFg[i - 1][idx2].second.y);
+          VB[idx] = glm::vec2(denseBg[i - 1][idx2].second.x, denseBg[i - 1][idx2].second.y);
+          VO[idx] = glm::vec2(denseFg[i - 1][idx2].second.x, denseFg[i - 1][idx2].second.y);
           int ni = (i <= 2) ? i - 1 : i;
-					VB[idx] = groupVectors[ni].first;
-					VO[idx] = groupVectors[ni].second;
           sequence[idx] = (float)grayscale[ni][idx2] * SCALE_1_255;
         }
       }
@@ -406,10 +389,9 @@ int main() {
 	imgData.imgO = fgImg;
 	imgData.imgB = bgImg;
 	imgData.sequence = sequence;
-  GradientDescent cpu_gd(width, height, 5, VB, VO, alpha, fgImg, bgImg, sequence);
-  printf("\nOptimizing...\n=============================================\n");
-  // gd.optimize();
-	cpu_gd.optimize();
+  // GradientDescent gd(width, height, 5, VB, VO, alpha, fgImg, bgImg, sequence);
+  printf("Optimizing...\n");
+  gd.optimize();
 	gd.getResults(&imgData);
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width; x++) {
