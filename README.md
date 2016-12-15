@@ -14,6 +14,8 @@ GPU-Accelerated Obstruction Free Photography
 
 <img src="https://i.imgur.com/qJYtNG1.png" width=300></img> <img src="https://i.imgur.com/Rac9baV.png" width=300></img>
 
+# Build instructions
+Just run make. Requires CUDA, OpenCV, and CImg.
 
 # Overview
 The field of computer vision is the dual to computer graphics. In many cases, the unknowns that we are solving for in optical models are swapped around. For example, the graphics problem "given camera motion and lighting + scene conditions, generate a photorealistic image" has the counterpart vision problem "given photorealistic images and estimated lighting + scene conditions, calculate the camera motion".
@@ -136,8 +138,6 @@ Since the pipeline is sequential, performance bottlenecks are distributed across
 ## Time Breakdown
 ![](http://i.imgur.com/Jtg5HbM.png)
 The overall time spent computing on the GPU was on RANSAC as well as Gradient descent. This is because gradient descent and RANSAC are both iterative methods that require multiple steps to convergence. As a result, we want high iterations for for both of these to get the best images. On the other hand, if we were to make this an real-time pipeline, we would choose to do ~5 iterations to achieve sub 100ms time. 
-
-# Future work
 
 # Other images
 ![](https://i.imgur.com/cBbQCz2.png)
