@@ -45,7 +45,7 @@ __global__ void kernSmooth(int N, int width, int height, unsigned char * in, uns
 	out[y * width + x] = fabs(c);
 }
 
-__global__ void kernGradient(int N, int width, int height, unsigned char * in, unsigned char * gradient, unsigned char * edgeDir, unsigned char * G_x, unsigned char * G_y) {
+__global__ void kernGradient(int N, int width, int height, unsigned char * in, unsigned char * gradient, unsigned char * edgeDir, float * G_x, float * G_y) {
   int x = (blockIdx.x * blockDim.x) + threadIdx.x;
 	int y = (blockIdx.y * blockDim.y) + threadIdx.y;
 	if (x >= width || y >= height) {
@@ -148,8 +148,8 @@ __global__ void hysteresis(int N, int width, int height, unsigned char * in) {
 unsigned char * Canny::edge(int N, int width, int height, unsigned char * in) {
 	unsigned char * dev_in, * dev_gradient;
 
-  unsigned char * smooth, * gradient, * edgeDir, * gradient_x, * gradient_y;
-  float * blur;
+  unsigned char * smooth, * gradient, * edgeDir;
+  float * blur_kernel, * gradient_x, * gradient_y;
 	gradient = new unsigned char[N];
   cudaMalloc(&smooth, sizeof(unsigned char) * N);
   cudaMalloc(&dev_gradient, sizeof(unsigned char) * N);
@@ -158,33 +158,29 @@ unsigned char * Canny::edge(int N, int width, int height, unsigned char * in) {
 
 	cudaMemcpy(dev_in, in, N * sizeof(unsigned char), cudaMemcpyHostToDevice);
 
-  cudaMalloc(&blur, sizeof(float) * 5 * 5);
-  cudaMemcpy(blur, gaussian, sizeof(float) * 5 * 5, cudaMemcpyHostToDevice);
+  cudaMalloc(&blur_kernel, sizeof(float) * 5 * 5);
+  cudaMemcpy(blur_kernel, gaussian, sizeof(float) * 5 * 5, cudaMemcpyHostToDevice);
 
-  cudaMalloc(&gradient_x, sizeof(unsigned char) * 3 * 3);
-  cudaMemcpy(gradient_x, G_x, sizeof(unsigned char) * 3 * 3, cudaMemcpyHostToDevice);
+  cudaMalloc(&gradient_x, sizeof(float) * 3 * 3);
+  cudaMemcpy(gradient_x, G_x, sizeof(float) * 3 * 3, cudaMemcpyHostToDevice);
 
-  cudaMalloc(&gradient_y, sizeof(unsigned char) * 3 * 3);
-  cudaMemcpy(gradient_y, G_y, sizeof(unsigned char) * 3 * 3, cudaMemcpyHostToDevice);
+  cudaMalloc(&gradient_y, sizeof(float) * 3 * 3);
+  cudaMemcpy(gradient_y, G_y, sizeof(float) * 3 * 3, cudaMemcpyHostToDevice);
 
   const dim3 blockSize2d(8,8);
   const dim3 blocksPerGrid2d(
   		(width + blockSize2d.x - 1) / blockSize2d.x,
   		(height + blockSize2d.y - 1) / blockSize2d.y);
 
-  kernSmooth<<<blocksPerGrid2d, blockSize2d>>>(N, width, height, dev_in, smooth, blur, 5);
-	cudaDeviceSynchronize();
+  kernSmooth<<<blocksPerGrid2d, blockSize2d>>>(N, width, height, dev_in, smooth, blur_kernel, 5);
   kernGradient<<<blocksPerGrid2d, blockSize2d>>>(N, width, height, smooth, dev_gradient, edgeDir, gradient_x, gradient_y);
-	cudaDeviceSynchronize();
   nonMaxSuppression<<<blocksPerGrid2d, blockSize2d>>>(N, width, height, edgeDir, dev_gradient);
-	cudaDeviceSynchronize();
   hysteresis<<<blocksPerGrid2d, blockSize2d>>>(N, width, height, dev_gradient); // can use stream compaction
-	cudaDeviceSynchronize();
 	cudaMemcpy(gradient, dev_gradient, N * sizeof(unsigned char), cudaMemcpyDeviceToHost);
 
   cudaFree(smooth);
   cudaFree(edgeDir);
-  cudaFree(blur);
+  cudaFree(blur_kernel);
   cudaFree(gradient_x);
   cudaFree(gradient_y);
 	cudaFree(dev_gradient);
