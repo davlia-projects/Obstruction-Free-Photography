@@ -172,7 +172,7 @@ unsigned char * Canny::edge(int N, int width, int height, unsigned char * in) {
   		(width + blockSize2d.x - 1) / blockSize2d.x,
   		(height + blockSize2d.y - 1) / blockSize2d.y);
 
-  kernSmooth<<<blocksPerGrid2d, blockSize2d>>>(N, width, height, in, smooth, blur, 5);
+  kernSmooth<<<blocksPerGrid2d, blockSize2d>>>(N, width, height, dev_in, smooth, blur, 5);
 	cudaDeviceSynchronize();
   kernGradient<<<blocksPerGrid2d, blockSize2d>>>(N, width, height, smooth, dev_gradient, edgeDir, gradient_x, gradient_y);
 	cudaDeviceSynchronize();
