@@ -2,10 +2,10 @@
 #include "CImg.h"
 #include "canny.h"
 #include "flow.h"
-#include "gradient_descent.h"
+#include "gpu_gradient_descent.h"
 #include "interpolate.h"
 #include "lk.h"
-#include "kmeans.h"
+#include "ransac.h"
 
 using namespace cimg_library;
 using namespace std;
@@ -110,8 +110,8 @@ int main() {
   edgeFlowPairs[2] = lkEdgeFlow(N / 3, width, height, gradient[0], grayscale[2], grayscale[3]);
   edgeFlowPairs[3] = lkEdgeFlow(N / 3, width, height, gradient[0], grayscale[2], grayscale[4]);
 
-  glm::ivec2 * pointDiffs = new glm::ivec2[N / 3];
-  glm::ivec2 * actualPointDiffs = new glm::ivec2[N / 3];
+  // glm::ivec2 * pointDiffs = new glm::ivec2[N / 3];
+  // glm::ivec2 * actualPointDiffs = new glm::ivec2[N / 3];
   bool * sparseMap = new bool[N / 3];
   pair<glm::ivec2, glm::ivec2> * denseBg[4];
   pair<glm::ivec2, glm::ivec2> * denseFg[4];
@@ -127,44 +127,67 @@ int main() {
     //bgImg[i] = 0.0f;
   }
   unsigned char * lkViz = new unsigned char[N / 3];
+
+	int SPARSE_SIZE = edgeFlowPairs[0].first.size();
+	glm::vec2 * pointDiffs = new glm::vec2[SPARSE_SIZE];
+	bool * pointGroup = new bool[SPARSE_SIZE];
+	RansacSeparator * ransacSeparator = new RansacSeparator(SPARSE_SIZE);
+	pair<glm::vec2,glm::vec2> groupVectors;
+
   for (int j = 0; j < 4; j++) {
-    memset(sparseMap, 0, (N / 3) * sizeof(bool));
-    for (int i = 0; i < edgeFlowPairs[j].first.size(); i++) {
+    // memset(sparseMap, 0, (N / 3) * sizeof(bool));
+    for (int i = 0; i < SPARSE_SIZE; i++) {
       Point2f & p = edgeFlowPairs[j].first[i];
       int idx = (int)p.y * width + (int)p.x;
       sparseMap[idx] = true;
       Point2f & q = edgeFlowPairs[j].second[i];
-      int nj = (j >= 2) ? j + 1: j;
-      int tc = grayscale[nj][int(p.y + q.y) * width + int(p.x + q.x)];
-      pointDiffs[idx] = glm::ivec2(tc, tc);
-      actualPointDiffs[idx] = glm::ivec2(q.x, q.y);
+      // int nj = (j >= 2) ? j + 1: j;
+      // int tc = grayscale[nj][int(p.y + q.y) * width + int(p.x + q.x)];
+			pointDiffs[i] = glm::ivec2(q.x, q.y);
+      // pointDiffs[idx] = glm::ivec2(tc, tc);
+      // actualPointDiffs[idx] = glm::ivec2(q.x, q.y);
     }
     printf("Separating...\n");
     group1[j] = new bool[N / 3];
     group2[j] = new bool[N / 3];
-    if (j == 0 || j == 3) {
+		memset(group1[j], 0, (N / 3) * sizeof(bool));
+		memset(group2[j], 0, (N / 3) * sizeof(bool));
+		groupVectors = ransacSeparator->separate(pointGroup, pointDiffs, 0.4f, 30);
+		for (int i = 0; i < SPARSE_SIZE; i++) {
+			int idx = edgeFlowPairs[j].first[i].y * width + edgeFlowPairs[j].first[i].x;
+			if (pointGroup[i]) {
+				group1[j][idx] = true;
+			} else {
+				group2[j][idx] = true;
+			}
+		}
+    /*if (j == 0 || j == 3) {
       separatePoints(width, height, group1[j], group2[j], sparseMap, pointDiffs, 2000.0f, 30);
     } else {
       separatePoints(width, height, group1[j], group2[j], sparseMap, pointDiffs, 2000.0f, 30);
-    }
+    }*/
 
     vector<pair<glm::ivec2, glm::ivec2>> fgPoints;
     vector<pair<glm::ivec2, glm::ivec2>> bgPoints;
     fgPoints.clear();
     bgPoints.clear();
+    printf("Interpolating...\n");
+		denseFg[j] = new pair<glm::ivec2, glm::ivec2>[N / 3];
+		denseBg[j] = new pair<glm::ivec2, glm::ivec2>[N / 3];
     for (int y = 0; y < height; y++) {
       for (int x = 0; x < width; x++) {
         int idx = y * width + x;
         if (group1[j][idx]) {
-          bgPoints.push_back(make_pair(glm::ivec2(x, y), actualPointDiffs[idx]));
+          bgPoints.push_back(make_pair(glm::ivec2(x, y), pointDiffs[idx]));
         } else if (group2[j][idx]) {
-          fgPoints.push_back(make_pair(glm::ivec2(x, y), actualPointDiffs[idx]));
+          fgPoints.push_back(make_pair(glm::ivec2(x, y), pointDiffs[idx]));
         }
+				denseBg[j][idx] = make_pair(glm::ivec2(x, y), glm::ivec2(groupVectors.first.x, groupVectors.first.y));
+				denseFg[j][idx] = make_pair(glm::ivec2(x, y), glm::ivec2(groupVectors.second.x, groupVectors.second.y));
       }
     }
-    printf("Interpolating...\n");
-    denseBg[j] = interpolate(bgPoints.size(), width, height, bgPoints.data());
-    denseFg[j] = interpolate(fgPoints.size(), width, height, fgPoints.data());
+    // denseBg[j] = interpolate(bgPoints.size(), width, height, bgPoints.data());
+    // denseFg[j] = interpolate(fgPoints.size(), width, height, fgPoints.data());
     for (int y = 0; y < height; y++) {
       for (int x = 0; x < width; x++) {
         int idx = y * width + x;
@@ -353,9 +376,18 @@ int main() {
   }
   Mat ffmat2(Size(width, height), CV_8UC1, bgViz2);
   imwrite("bg_img4.jpg", ffmat2);
-  GradientDescent gd(width, height, 5, VB, VO, alpha, fgImg, bgImg, sequence);
+	GpuGradientDescent gd(width, height, 5, VO, VB, alpha, fgImg, bgImg, sequence);
+	ImgData imgData;
+	imgData.VO = VO;
+	imgData.VB = VB;
+	imgData.alpha = alpha;
+	imgData.imgO = fgImg;
+	imgData.imgB = bgImg;
+	imgData.sequence = sequence;
+  // GradientDescent gd(width, height, 5, VB, VO, alpha, fgImg, bgImg, sequence);
   printf("Optimizing...\n");
   gd.optimize();
+	gd.getResults(&imgData);
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width; x++) {
       int idx = y * width + x;

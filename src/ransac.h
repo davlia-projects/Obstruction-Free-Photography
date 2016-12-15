@@ -1,8 +1,11 @@
 #pragma once
 
-#include <bits/stdc++.h>
 #include <cuda.h>
+#include <glm/glm.hpp>
 #include <thrust/device_ptr.h>
+#include <thrust/reduce.h>
+#include <thrust/sort.h>
+#include <utility>
 using namespace std;
 
 struct PointDelta {
@@ -13,17 +16,14 @@ struct PointDelta {
 
 class RansacSeparator {
   private:
-    const int BLOCK_SIZE = 128;
-    int N;
-    dim3 blocksPerGrid;
-
     bool * devPointGroup;
     glm::vec2 * devPointDiffs;
     PointDelta * devPointDeltas;
     thrust::device_ptr<PointDelta> thrust_devPointDeltas;
   public:
+		int N;
     RansacSeparator(int N);
     ~RansacSeparator();
 
-    void separate(bool * pointGroup, glm::vec2 * pointDiffs, float THRESHOLD, int ITERATIONS);
+    pair<glm::vec2, glm::vec2> separate(bool * pointGroup, glm::vec2 * pointDiffs, float THRESHOLD, int ITERATIONS);
 };
