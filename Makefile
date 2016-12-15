@@ -18,8 +18,10 @@ all: canny flow warp lk ransac interpolate gd main
 main: $(SRCDIR)/main.cpp
 	$(CXX) $(SRCDIR)/main.cpp $(OBJS) -o $(BINDIR)/main $(CPPFLAGS) $(LIBS) $(CUDA_LIBS) `pkg-config opencv --cflags --libs`
 
-canny: $(SRCDIR)/canny.cpp
-	$(CXX) -c $(SRCDIR)/canny.cpp -o $(OBJDIR)/canny.o $(CPPFLAGS)
+canny: $(SRCDIR)/canny.cu
+ifeq ($(HAS_CUDA),y)
+	$(NVXX) -c $(SRCDIR)/canny.cu -o $(OBJDIR)/canny.o
+endif
 
 flow: $(SRCDIR)/flow.cpp
 	$(CXX) -c $(SRCDIR)/flow.cpp -o $(OBJDIR)/flow.o $(CPPFLAGS)

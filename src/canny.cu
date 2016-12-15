@@ -149,9 +149,7 @@ unsigned char * Canny::edge(int N, int width, int height, unsigned char * in) {
 
   unsigned char * smooth, * gradient, * edgeDir, * gradient_x, * gradient_y;
   float * blur;
-  cudaMalloc(&smooth, sizeof(unsigned char) * N);
-  cudaMalloc(&gradient, sizeof(unsigned char) * N);
-  cudaMalloc(&edgeDir, sizeof(unsigned char) * N);
+
 
   cudaMalloc(&blur, sizeof(float) * 5 * 5);
   cudaMemcpy(blur, gaussian, sizeof(float) * 5 * 5, cudaMemcpyHostToDevice);
