@@ -36,7 +36,7 @@ flow: $(SRCDIR)/flow.cpp
 lk: $(SRCDIR)/lk.cpp
 	$(CXX) -c $(SRCDIR)/lk.cpp -o $(OBJDIR)/lk.o $(CPPFLAGS)
 
-ransac: $(SRCDIR)/kmeans.cpp
+ransac: $(SRCDIR)/ransac.cu
 ifeq ($(HAS_CUDA),y)
 	$(NVXX) -c $(SRCDIR)/ransac.cu -o $(OBJDIR)/ransac.o -std=c++11
 else
