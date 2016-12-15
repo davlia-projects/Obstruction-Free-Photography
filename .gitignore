@@ -1,4 +1,4 @@
-.*.swp
 obj/*
 bin/*
+**/*.swp
 video/*

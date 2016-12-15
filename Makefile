@@ -1,50 +1,48 @@
 OBJDIR=obj
 SRCDIR=src
 BINDIR=bin
-CPPFLAGS=-g -Wall -Wextra -std=c++11 -I $(SRCDIR)
+CPPFLAGS=-g -Wall -Wextra -std=c++11 -I $(SRCDIR) -I/opt/X11/include -I/opt/cuda/include
 CXX=g++
 NVXX=nvcc
+LIBS=-lX11 -lXext -lpthread -L/opt/X11/lib/ -lavutil -lavformat -lavcodec -lavdevice -lswscale
 HAS_CUDA=y
+OBJS=$(OBJDIR)/canny.o $(OBJDIR)/flow.o $(OBJDIR)/lk.o $(OBJDIR)/ransac.o $(OBJDIR)/interpolate.o $(OBJDIR)/gradient_descent.o
+
 ifeq ($(HAS_CUDA),y)
 	CUDA_LIBS=-lcudadevrt -lcudart -lcuda
 else
 	CUDA_LIBS=
 endif
-LIBS=-lavutil -lavformat -lavcodec -lavdevice -lswscale
-
-all: naive async basic unified blank diff diffblur main
+all: canny flow warp lk ransac interpolate gd main 
 
 main: $(SRCDIR)/main.cpp
-	$(CXX) $(SRCDIR)/main.cpp $(SRCDIR)/pipeline.cpp $(OBJDIR)/diff_blur.o -o $(BINDIR)/main $(CPPFLAGS) $(LIBS) $(CUDA_LIBS)
+	$(CXX) $(SRCDIR)/main.cpp $(OBJS) -o $(BINDIR)/main $(CPPFLAGS) $(LIBS) $(CUDA_LIBS) `pkg-config opencv --cflags --libs`
 
-blank: $(SRCDIR)/blank.cpp
-	$(CXX) -c $(SRCDIR)/blank.cpp -o $(OBJDIR)/blank.o $(CPPFLAGS)
+canny: $(SRCDIR)/canny.cpp
+	$(CXX) -c $(SRCDIR)/canny.cpp -o $(OBJDIR)/canny.o $(CPPFLAGS)
 
-diff: $(SRCDIR)/diff.cpp
-	$(CXX) -c $(SRCDIR)/diff.cpp -o $(OBJDIR)/diff.o $(CPPFLAGS)
+flow: $(SRCDIR)/flow.cpp
+	$(CXX) -c $(SRCDIR)/flow.cpp -o $(OBJDIR)/flow.o $(CPPFLAGS)
 
-naive: $(SRCDIR)/naive.cpp
-	$(CXX) -c $(SRCDIR)/naive.cpp -o $(OBJDIR)/naive.o $(CPPFLAGS)
+lk: $(SRCDIR)/lk.cpp
+	$(CXX) -c $(SRCDIR)/lk.cpp -o $(OBJDIR)/lk.o $(CPPFLAGS)
 
-async: $(SRCDIR)/async_blur.cu
+ransac: $(SRCDIR)/kmeans.cpp
 ifeq ($(HAS_CUDA),y)
-	$(NVXX) -c $(SRCDIR)/async_blur.cu -o $(OBJDIR)/async_blur.o
+	$(NVXX) -c $(SRCDIR)/ransac.cu -o $(OBJDIR)/ransac.o -std=c++11
+else
+	$(CXX) -c $(SRCDIR)/kmeans.cpp -o $(OBJDIR)/ransac.o $(CPPFLAGS)
 endif
 
-basic: $(SRCDIR)/basic_blur.cu
-ifeq ($(HAS_CUDA),y)
-	$(NVXX) -c $(SRCDIR)/basic_blur.cu -o $(OBJDIR)/basic_blur.o
-endif
+interpolate: $(SRCDIR)/interpolate.cpp
+	$(CXX) -c $(SRCDIR)/interpolate.cpp -o $(OBJDIR)/interpolate.o $(CPPFLAGS)
 
-unified: $(SRCDIR)/unified_blur.cu
-ifeq ($(HAS_CUDA),y)
-	$(NVXX) -c $(SRCDIR)/unified_blur.cu -o $(OBJDIR)/unified_blur.o
-endif
+warp: $(SRCDIR)/warp.cpp
+	$(CXX) -c $(SRCDIR)/warp.cpp -o $(OBJDIR)/warp.o $(CPPFLAGS)
 
-diffblur: $(SRCDIR)/diff_blur.cu
+gd: $(SRCDIR)/gradient_descent.cpp
 ifeq ($(HAS_CUDA),y)
-	$(NVXX) -c $(SRCDIR)/diff_blur.cu -o $(OBJDIR)/diff_blur.o
+	$(NVXX) -c $(SRCDIR)/gpu_gradient_descent.cu -o $(OBJDIR)/gradient_descent.o
+else
+	$(CXX) -c $(SRCDIR)/gradient_descent.cpp -o $(OBJDIR)/gradient_descent.o $(CPPFLAGS)
 endif
-
-clean:
-	rm bin/* obj/*
