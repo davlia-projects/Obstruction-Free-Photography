@@ -146,13 +146,17 @@ __global__ void hysteresis(int N, int width, int height, unsigned char * in) {
 
 
 unsigned char * Canny::edge(int N, int width, int height, unsigned char * in) {
+	unsigned char * dev_in, * dev_gradient;
 
   unsigned char * smooth, * gradient, * edgeDir, * gradient_x, * gradient_y;
   float * blur;
+	gradient = new unsigned char[N];
   cudaMalloc(&smooth, sizeof(unsigned char) * N);
-  cudaMalloc(&gradient, sizeof(unsigned char) * N);
+  cudaMalloc(&dev_gradient, sizeof(unsigned char) * N);
+  cudaMalloc(&dev_in, sizeof(unsigned char) * N);
   cudaMalloc(&edgeDir, sizeof(unsigned char) * N);
 
+	cudaMemcpy(dev_in, in, N * sizeof(unsigned char), cudaMemcpyHostToDevice);
 
   cudaMalloc(&blur, sizeof(float) * 5 * 5);
   cudaMemcpy(blur, gaussian, sizeof(float) * 5 * 5, cudaMemcpyHostToDevice);
@@ -169,15 +173,21 @@ unsigned char * Canny::edge(int N, int width, int height, unsigned char * in) {
   		(height + blockSize2d.y - 1) / blockSize2d.y);
 
   kernSmooth<<<blocksPerGrid2d, blockSize2d>>>(N, width, height, in, smooth, blur, 5);
-  kernGradient<<<blocksPerGrid2d, blockSize2d>>>(N, width, height, smooth, gradient, edgeDir, gradient_x, gradient_y);
-  nonMaxSuppression<<<blocksPerGrid2d, blockSize2d>>>(N, width, height, edgeDir, gradient);
-  hysteresis<<<blocksPerGrid2d, blockSize2d>>>(N, width, height, gradient); // can use stream compaction
+	cudaDeviceSynchronize();
+  kernGradient<<<blocksPerGrid2d, blockSize2d>>>(N, width, height, smooth, dev_gradient, edgeDir, gradient_x, gradient_y);
+	cudaDeviceSynchronize();
+  nonMaxSuppression<<<blocksPerGrid2d, blockSize2d>>>(N, width, height, edgeDir, dev_gradient);
+	cudaDeviceSynchronize();
+  hysteresis<<<blocksPerGrid2d, blockSize2d>>>(N, width, height, dev_gradient); // can use stream compaction
+	cudaDeviceSynchronize();
+	cudaMemcpy(gradient, dev_gradient, N * sizeof(unsigned char), cudaMemcpyDeviceToHost);
 
   cudaFree(smooth);
   cudaFree(edgeDir);
   cudaFree(blur);
   cudaFree(gradient_x);
   cudaFree(gradient_y);
+	cudaFree(dev_gradient);
 
   return gradient;
 }

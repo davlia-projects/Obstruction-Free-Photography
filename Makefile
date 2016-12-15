@@ -20,7 +20,7 @@ main: $(SRCDIR)/main.cpp
 
 canny: $(SRCDIR)/canny.cu
 ifeq ($(HAS_CUDA),y)
-	$(NVXX) -c $(SRCDIR)/canny.cu -o $(OBJDIR)/canny.o
+	$(NVXX) -c $(SRCDIR)/canny.cu -o $(OBJDIR)/canny.o -std=c++11
 endif
 
 flow: $(SRCDIR)/flow.cpp
@@ -44,7 +44,7 @@ warp: $(SRCDIR)/warp.cpp
 
 gd: $(SRCDIR)/gradient_descent.cpp
 ifeq ($(HAS_CUDA),y)
-	$(NVXX) -c $(SRCDIR)/gpu_gradient_descent.cu -o $(OBJDIR)/gradient_descent.o
+	$(NVXX) -c $(SRCDIR)/gpu_gradient_descent.cu -o $(OBJDIR)/gradient_descent.o -std=c++11
 else
 	$(CXX) -c $(SRCDIR)/gradient_descent.cpp -o $(OBJDIR)/gradient_descent.o $(CPPFLAGS)
 endif

@@ -1,4 +1,3 @@
-#include <bits/stdc++.h>
 #include "gpu_gradient_descent.h"
 using namespace std;
 
