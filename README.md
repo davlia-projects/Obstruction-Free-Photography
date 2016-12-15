@@ -150,6 +150,7 @@ Removing the spokes of a bike wheel from Harrison College House.
 
 # Bloopers
 <img src="http://i.imgur.com/2MHWLro.png" width=600></img>
+
 When canny edge detection goes wrong...
 
 <img src="http://i.imgur.com/Rs6V7kB.png" width=600></img>
