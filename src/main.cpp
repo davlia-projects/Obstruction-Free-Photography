@@ -152,7 +152,7 @@ int main() {
     group2[j] = new bool[N / 3];
 		memset(group1[j], 0, (N / 3) * sizeof(bool));
 		memset(group2[j], 0, (N / 3) * sizeof(bool));
-		groupVectors = ransacSeparator->separate(pointGroup, pointDiffs, 0.4f, 30);
+		groupVectors = ransacSeparator->separate(pointGroup, pointDiffs, 0.8f, 30);
 		for (int i = 0; i < SPARSE_SIZE; i++) {
 			int idx = edgeFlowPairs[j].first[i].y * width + edgeFlowPairs[j].first[i].x;
 			if (pointGroup[i]) {
@@ -177,11 +177,11 @@ int main() {
     for (int y = 0; y < height; y++) {
       for (int x = 0; x < width; x++) {
         int idx = y * width + x;
-        if (group1[j][idx]) {
+        /*if (group1[j][idx]) {
           bgPoints.push_back(make_pair(glm::ivec2(x, y), pointDiffs[idx]));
         } else if (group2[j][idx]) {
           fgPoints.push_back(make_pair(glm::ivec2(x, y), pointDiffs[idx]));
-        }
+        }*/
 				denseBg[j][idx] = make_pair(glm::ivec2(x, y), glm::ivec2(groupVectors.first.x, groupVectors.first.y));
 				denseFg[j][idx] = make_pair(glm::ivec2(x, y), glm::ivec2(groupVectors.second.x, groupVectors.second.y));
       }
