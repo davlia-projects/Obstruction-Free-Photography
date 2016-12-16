@@ -48,6 +48,7 @@ Output: A background image without obstruction
   * [Dense flow interpolation](#dense-flow-interpolation)
   * [Warp matrix generation + Image warping](#warp-matrix)
   * [Background and foreground initial estimated separation](#background-and-foreground-initial-estimation)
+
 2) [Optimization](#optimization)
   * [Minimize cost function](#optimization)
 
