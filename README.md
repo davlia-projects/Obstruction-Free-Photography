@@ -1,19 +1,10 @@
 # GPU-Accelerated Obstruction Free Photography
 
-Team members: [David Liao](https://github.com/davlia) and [Zhan Xiong Chin](https://github.com/czxcjx)
+Hacked together by [David Liao](https://github.com/davlia) and [Zhan Xiong Chin](https://github.com/czxcjx)
 
 Tested on:  AWS g2.2xlarge instance (Linux ip-172-31-53-81 4.4.0-53-generic #74-Ubuntu SMP Fri Dec 2 15:59:10 UTC 2016 x86_64 x86_64 x86_64 GNU/Linux, Nvidia GK104GL [GRID 520])
 
-## Milestone 1
-[Presentation](https://docs.google.com/presentation/d/1DC9_Wc-EFBK_Mkw0OPGu9UvurDkdzBU-ETGmCi3bOsI/edit?usp=sharing)
-
-## Milestone 2
-[Presentation]()
-
-## Milestone 3
-[Presentation]()
-
-## Final Presentation
+## Technical Presentation
 [Presentation](https://docs.google.com/presentation/d/1GOTx-BjeLcm1W14b2YrThjsyaG2mvMA-fIdKSFwgc-E/edit?usp=sharing)
 
 <img src="https://i.imgur.com/qJYtNG1.png" width=300></img> <img src="https://i.imgur.com/Rac9baV.png" width=300></img>
